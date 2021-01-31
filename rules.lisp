@@ -39,7 +39,15 @@
 
 ;;; All get-move-... function that return the available moves
 (defun get-move-pawn (row column)
-  (if (> row 1) (+ row 1) (promote piece)))
+  (if (> row 1)
+      (list (+ row 1) column) (promote "P")))
+
+(defun get-move-lance (row column)
+  (cond ((> row 1)
+      (let* ((avail-row (remove (+ row 1) '(1 2 3 4 5 6 7 8 9) :test #'>))
+	      (avail-column (mapcar (lambda (x) (setq x column)) avail-row)))
+       (list avail-row avail-column)))
+      (promote "L")))  
 	
 	
 	

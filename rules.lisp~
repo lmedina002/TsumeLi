@@ -13,33 +13,33 @@
    :8 '(:1 "" :2 "" :3 "" :4 "" :5 "" :6 "" :7 "" :8 "" :9 "")
    :9 '(:1 "" :2 "" :3 "" :4 "" :5 "" :6 "" :7 "" :8 "" :9 "")))
 
-(defun select-square (board row number)
+(defun select-square (board row column)
   "Return the piece on the square"
-  (getf (getf board row) number))
+  (getf (getf board row) column))
 
-(defun move (board row number)
-  (move-piece (board (select-square board row number))))
+(defun move (board row column)
+  (move-piece (board (select-square board row column))))
 
 ;(defun move-piece (board piece direction)
 ;  (cond ((equal piece "P") (move-pawn))
 	
-(defun get-available-move (piece row number)
-  (cond (equal piece "P") (get-move-pawn row number)
-	(equal piece "L") (get-move-lance row number)
-	(equal piece "N") (get-move-knight row number)
-	(equal piece "S") (get-move-silver row number)
-	(equal piece "G") (get-move-gold row number)
-	(equal piece "B") (get-move-bishop row number)
-	(equal piece "R") (get-move-rook row number)
-	(equal piece "K") (get-move-knight row number)
-	(equal piece "J") (get-move-jewel row number) ;roi adverse a voir si utile
-	(equal piece "+R") (get-move-dragon row number)
-	(equal piece "+B") (get-move-horse row number)
-	(or (equal piece "+S") (equal piece "+N") (equal piece "+L") (equal piece "+P")) (get-move-gold row number)))
+(defun get-available-move (piece row column)
+  (cond ((equal piece "P") (get-move-pawn row column))
+	((equal piece "L") (get-move-lance row column))
+	((equal piece "N") (get-move-knight row column))
+	((equal piece "S") (get-move-silver row column))
+	((equal piece "G") (get-move-gold row column))
+	((equal piece "B") (get-move-bishop row column))
+	((equal piece "R") (get-move-rook row column))
+	((equal piece "K") (get-move-knight row column))
+	((equal piece "J") (get-move-jewel row column)) ;roi adverse a voir si utile
+	((equal piece "+R") (get-move-dragon row column))
+	((equal piece "+B") (get-move-horse row column))
+	((or (equal piece "+S") (equal piece "+N") (equal piece "+L") (equal piece "+P")) (get-move-gold row column))))
 
 ;;; All get-move-... function that return the available moves
-(defun get-move-pawn (row number)
-  (if (< number 
+(defun get-move-pawn (row column)
+  (if (> row 1) (+ row 1) (promote piece)))
 	
 	
 	
