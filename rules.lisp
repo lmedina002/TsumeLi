@@ -3,15 +3,15 @@
 (defun init-empty-board ()
   "Create an empty board indexed by letter rows and columns"
   (list
-   :1 '(:1 "" :2 "" :3 "" :4 "" :5 "" :6 "" :7 "" :8 "" :9 "")
-   :2 '(:1 "" :2 "" :3 "" :4 "" :5 "" :6 "" :7 "" :8 "" :9 "")
-   :3 '(:1 "" :2 "" :3 "" :4 "" :5 "" :6 "" :7 "" :8 "" :9 "")
-   :4 '(:1 "" :2 "" :3 "" :4 "" :5 "" :6 "" :7 "" :8 "" :9 "")
-   :5 '(:1 "" :2 "" :3 "" :4 "" :5 "" :6 "" :7 "" :8 "" :9 "")
-   :6 '(:1 "" :2 "" :3 "" :4 "" :5 "" :6 "" :7 "" :8 "" :9 "")
-   :7 '(:1 "" :2 "" :3 "" :4 "" :5 "" :6 "" :7 "" :8 "" :9 "")
+   :9 '(:1 "" :2 "" :3 "" :4 "" :5 "" :6 "" :7 "" :8 "" :9 "")
    :8 '(:1 "" :2 "" :3 "" :4 "" :5 "" :6 "" :7 "" :8 "" :9 "")
-   :9 '(:1 "" :2 "" :3 "" :4 "" :5 "" :6 "" :7 "" :8 "" :9 "")))
+   :7 '(:1 "" :2 "" :3 "" :4 "" :5 "" :6 "" :7 "" :8 "" :9 "")
+   :6 '(:1 "" :2 "" :3 "" :4 "" :5 "" :6 "" :7 "" :8 "" :9 "")
+   :5 '(:1 "" :2 "" :3 "" :4 "" :5 "" :6 "" :7 "" :8 "" :9 "")
+   :4 '(:1 "" :2 "" :3 "" :4 "" :5 "" :6 "" :7 "" :8 "" :9 "")
+   :3 '(:1 "" :2 "" :3 "" :4 "" :5 "" :6 "" :7 "" :8 "" :9 "")
+   :2 '(:1 "" :2 "" :3 "" :4 "" :5 "" :6 "" :7 "" :8 "" :9 "")
+   :1 '(:1 "" :2 "" :3 "" :4 "" :5 "" :6 "" :7 "" :8 "" :9 "")))
 
 (defun select-square (board row column)
   "Return the piece on the square"
@@ -37,9 +37,9 @@
 	((equal piece "+B") (get-move-horse row column))
 	((or (equal piece "+S") (equal piece "+N") (equal piece "+L") (equal piece "+P")) (get-move-gold row column))))
 
-;;; All get-move-... function that return the available moves
+;;; All get-move-... functions that return the available moves
 (defun get-move-pawn (row column)
-  (if (> row 1)
+  (cond (> row 1)
       (list (+ row 1) column) (promote "P")))
 
 (defun get-move-lance (row column)
@@ -47,7 +47,24 @@
       (let* ((avail-row (remove (+ row 1) '(1 2 3 4 5 6 7 8 9) :test #'>))
 	      (avail-column (mapcar (lambda (x) (setq x column)) avail-row)))
        (list avail-row avail-column)))
-      (promote "L")))  
+	(promote "L")))
+
+(defun get-move-knight (row column)
+  (cond ((and (> row 2) (< column 9) (> column 1))
+	 (list (list (+ row 2) (+ row 2)) (list (+ column 1) (- column 1))))
+	((and (> row 2) (= column 9))
+	 (list (list (+ row 2)) (list (- column 1))))
+	((and (> row 2) (= column 1))
+	 (list (list (+ row 2)) (list (+ column 1))))
+	(promote "N")))
+
+(defun get-move-silver (row column) ;marche pas car enleve separement -> changer mode de renvoi list doublon row column&
+  (let* ((avail-move (list (list (+ row 1) (+ row 1) (+ row 1) (- row 1) (- row 1))
+			 (list (+ column 1) column (- column 1) (+ column 1) (- column 1)))))
+    (list (remove 1 (remove 9 (first avail-move) :test #'<) :test #'>)
+	  (remove 1 (remove 9 (second avail-move) :test #'<) :test #'>))))
+    
+	 
 	
 	
 	
