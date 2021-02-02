@@ -31,11 +31,20 @@
 	((equal piece "G") (get-move-gold row column))
 	((equal piece "B") (get-move-bishop row column))
 	((equal piece "R") (get-move-rook row column))
-	((equal piece "K") (get-move-knight row column))
+	((equal piece "K") (get-move-king row column))
 	((equal piece "J") (get-move-jewel row column)) ;roi adverse a voir si utile
 	((equal piece "+R") (get-move-dragon row column))
 	((equal piece "+B") (get-move-horse row column))
 	((or (equal piece "+S") (equal piece "+N") (equal piece "+L") (equal piece "+P")) (get-move-gold row column))))
+
+;;; Utility functions
+(defun tuple-coord (rows columns)
+  "Transform a list of rows and a list of columns in a list of tuple (row column)"
+  (if (= (length rows) (length columns)) 
+  (let* ((result))
+    (dotimes (i (length rows) result)
+      (cond ((and (<= (nth i rows) 9) (>= (nth i rows) 1) (<= (nth i columns) 9) (>= (nth i columns) 1))
+	    (push (list (nth i rows) (nth i columns)) result)))))))
 
 ;;; All get-move-... functions that return the available moves
 (defun get-move-pawn (row column)
@@ -46,8 +55,7 @@
 (defun get-move-lance (row column)
   (cond ((> row 1)
 	 (let* ((avail-row (remove (+ row 1) '(1 2 3 4 5 6 7 8 9) :test #'>))
-		(avail-column (mapcar (lambda (x) (setq x column)) avail-row))
-		(result))
+		(avail-column (mapcar (lambda (x) (setq x column)) avail-row)))
 	   (tuple-coord avail-row avail-column)))
 	(promote "L")))
 
@@ -60,21 +68,65 @@
 	 (list (list (+ row 2) (+ column 1))))
 	(promote "N")))
 
-(defun get-move-silver (row column) ;marche pas car enleve separement -> changer mode de renvoi list doublon row column&
+(defun get-move-silver (row column)
   (let* ((all-row (list (+ row 1) (+ row 1) (+ row 1) (- row 1) (- row 1)))
-	 (all-column (list (+ column 1) column (- column 1) (+ column 1) (- column 1)))
-	 (avail-row (remove 1 (remove 9 all-row :test #'<) :test #'>))
-	 (avail-column (remove 1 (remove 9 all-column :test #'<) :test #'>)))
-    (tuple-coord avail-row avail-column)))
-    
-	 
-;;; Utility functions
-(defun tuple-coord (rows columns)
-  "Transform a list of rows and a list of columns in a list of tuple (row column)"
-  (if (= (length rows) (length columns)) 
+	 (all-column (list (+ column 1) column (- column 1) (+ column 1) (- column 1))))
+    (tuple-coord all-row all-column)))
+
+(defun get-move-gold (row column)
+  (let* ((all-row (list (+ row 1) (+ row 1) (+ row 1) row row (- row 1)))
+	 (all-column (list (+ column 1) column (- column 1) (+ column 1) (- column 1) column)))
+    (tuple-coord all-row all-column)))
+
+(defun get-move-bishop (row column)
   (let* ((result))
-    (dotimes (i (length rows) result)
-      (push (list (nth i rows) (nth i columns)) result)))))
+    (dotimes (i 9 result)
+      (when (and (/= i 0) (<= (+ row i) 9) (<= (+ column i) 9))
+	(push (list (+ row i) (+ column i)) result))
+      (when (and (/= i 0) (<= (+ row i) 9) (>= (- column i) 1))
+	(push (list (+ row i) (- column i)) result))
+      (when (and (/= i 0) (>= (- row i) 1) (<= (+ column i) 9))
+	(push (list (- row i) (+ column i)) result))
+      (when (and (/= i 0) (>= (- row i) 1) (>= (- column i) 1))
+	(push (list (- row i) (- column i)) result)))))
+
+(defun get-move-rook (row column)
+  (let* ((result))
+    (dotimes (i 9 result)
+      (when (and (/= i 0) (<= (+ row i) 9))
+	(push (list (+ row i) column) result))
+      (when (and (/= i 0) (>= (- row i) 1))
+	(push (list (- row i) column) result))
+      (when (and (/= i 0) (<= (+ column i) 9))
+	(push (list row (+ column i)) result))
+      (when (and (/= i 0) (>= (- column i) 1))
+	(push (list row (- column i)) result)))))
+
+(defun get-move-king (row column)
+  (let* ((result)) ;Moves from a gold general with 2 additionnal moves
+    (when (and (>= (- row 1) 1) (>= (- column 1) 1))
+      (push (list (- row 1) (- column 1)) result))      
+    (when (and (>= (- row 1) 1) (<= (+ column 1) 9))
+      (push (list (- row 1) (+ column 1)) result))
+    (append result (get-move-gold row column))))
+
+(defun get-move-dragon (row column)
+  (let* ((result))
+    (when (and (<= (+ row 1) 9) (<= (+ column 1) 9))
+      (push (list (+ row 1) (+ column 1)) result))
+    (when (and (<= (+ row 1) 9) (>= (- column 1) 1))
+      (push (list (+ row 1) (- column 1)) result))
+    (when (and (>= (- row 1) 1) (<= (+ column 1) 9))
+      (push (list (- row 1) (+ column 1)) result))
+    (when (and (>= (- row 1) 1) (>= (- column 1) 1))
+      (push (list (- row 1) (- column 1)) result))
+    (append result (get-move-rook row column))))
+
+    
+      
+   
+ 
+
   
 	
 	
