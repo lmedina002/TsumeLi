@@ -39,33 +39,43 @@
 
 ;;; All get-move-... functions that return the available moves
 (defun get-move-pawn (row column)
-  (cond (> row 1)
-      (list (+ row 1) column) (promote "P")))
+  (cond ((> row 1)
+	 (list (+ row 1 column)))
+	(promote "P")))
 
 (defun get-move-lance (row column)
   (cond ((> row 1)
-      (let* ((avail-row (remove (+ row 1) '(1 2 3 4 5 6 7 8 9) :test #'>))
-	      (avail-column (mapcar (lambda (x) (setq x column)) avail-row)))
-       (list avail-row avail-column)))
+	 (let* ((avail-row (remove (+ row 1) '(1 2 3 4 5 6 7 8 9) :test #'>))
+		(avail-column (mapcar (lambda (x) (setq x column)) avail-row))
+		(result))
+	   (tuple-coord avail-row avail-column)))
 	(promote "L")))
 
 (defun get-move-knight (row column)
   (cond ((and (> row 2) (< column 9) (> column 1))
-	 (list (list (+ row 2) (+ row 2)) (list (+ column 1) (- column 1))))
+	 (list (list (+ row 2) (+ column 1)) (list (+ row 2) (- column 1))))
 	((and (> row 2) (= column 9))
-	 (list (list (+ row 2)) (list (- column 1))))
+	 (list (list (+ row 2) (- column 1))))
 	((and (> row 2) (= column 1))
-	 (list (list (+ row 2)) (list (+ column 1))))
+	 (list (list (+ row 2) (+ column 1))))
 	(promote "N")))
 
 (defun get-move-silver (row column) ;marche pas car enleve separement -> changer mode de renvoi list doublon row column&
-  (let* ((avail-move (list (list (+ row 1) (+ row 1) (+ row 1) (- row 1) (- row 1))
-			 (list (+ column 1) column (- column 1) (+ column 1) (- column 1)))))
-    (list (remove 1 (remove 9 (first avail-move) :test #'<) :test #'>)
-	  (remove 1 (remove 9 (second avail-move) :test #'<) :test #'>))))
+  (let* ((all-row (list (+ row 1) (+ row 1) (+ row 1) (- row 1) (- row 1)))
+	 (all-column (list (+ column 1) column (- column 1) (+ column 1) (- column 1)))
+	 (avail-row (remove 1 (remove 9 all-row :test #'<) :test #'>))
+	 (avail-column (remove 1 (remove 9 all-column :test #'<) :test #'>)))
+    (tuple-coord avail-row avail-column)))
     
 	 
-	
+;;; Utility functions
+(defun tuple-coord (rows columns)
+  "Transform a list of rows and a list of columns in a list of tuple (row column)"
+  (if (= (length rows) (length columns)) 
+  (let* ((result))
+    (dotimes (i (length rows) result)
+      (push (list (nth i rows) (nth i columns)) result)))))
+  
 	
 	
 	
