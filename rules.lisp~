@@ -13,16 +13,48 @@
    :2 '(:1 "" :2 "" :3 "" :4 "" :5 "" :6 "" :7 "" :8 "" :9 "")
    :1 '(:1 "" :2 "" :3 "" :4 "" :5 "" :6 "" :7 "" :8 "" :9 "")))
 
+(defun init-board ()
+  "Create the initial board of the tsume to solve indexed by letter rows and columns. Ennemy pieces are prefixed with -"
+  (list :board
+    (list ;Tsume 68, soluce (S 6 7) -> (+S 5 8)
+     '("" "" "" "" "" "" "" "" "")
+     '("" "" "" "" "" "" "" "" "")
+     '("" "" "" "" "" "" "L" "" "R")
+     '("" "" "" "" "" "" "S" "J" "S")
+     '("" "" "" "" "" "" "" "" "")
+     '("" "" "" "" "" "" "" "" "")
+     '("" "" "" "" "" "" "" "" "")
+     '("" "" "" "" "" "" "" "" "")
+     '("" "" "" "" "" "" "" "" ""))
+    :drops '()))
+
+
 (defun select-square (board row column)
   "Return the piece on the square"
   (getf (getf board row) column))
 
-(defun move (board row column)
-  (move-piece (board (select-square board row column))))
+(defun get-all (board)
+  "Return every possible moves + drops with the notation ('Piece' row column)"
+  (let* ((result))
+    (dotimes (row 9 result)
+      (dotimes (column 9 result)
+	(let ((square (list (nth column (nth row (getf board :board))))))
+	  (typecase (car square)
+	    (character
+	     (when (char-not-equal (car square) #\Null)
+	       (push (list square (get-available-move square row column)) result))))
+	  (print result))))))
 
-;(defun move-piece (board piece direction)
-;  (cond ((equal piece "P") (move-pawn))
-	
+(defun get-test (board)
+  "Return every possible moves + drops with the notation ('Piece' row column)"
+  (let* ((result))
+    (dotimes (row 9 result)
+      (dotimes (column 9 result)
+	(let ((square (list (nth column (nth row (getf board :board))))))
+	  (print square))))))
+    
+
+
 (defun get-available-move (piece row column)
   (cond ((equal piece "P") (get-move-pawn row column))
 	((equal piece "L") (get-move-lance row column))
@@ -32,7 +64,7 @@
 	((equal piece "B") (get-move-bishop row column))
 	((equal piece "R") (get-move-rook row column))
 	((equal piece "K") (get-move-king row column))
-	((equal piece "J") (get-move-jewel row column)) ;roi adverse a voir si utile
+	((equal piece "J") (get-move-king row column)) ;roi adverse a voir si utile
 	((equal piece "+R") (get-move-dragon row column))
 	((equal piece "+B") (get-move-horse row column))
 	((or (equal piece "+S") (equal piece "+N") (equal piece "+L") (equal piece "+P")) (get-move-gold row column))))
@@ -121,6 +153,18 @@
     (when (and (>= (- row 1) 1) (>= (- column 1) 1))
       (push (list (- row 1) (- column 1)) result))
     (append result (get-move-rook row column))))
+
+(defun get-move-horse (row column)
+  (let* ((result))
+    (when (<= (+ row 1) 9)
+      (push (list (+ row 1) column) result))
+    (when (>= (- row 1) 1)
+      (push (list (- row 1) column) result))
+    (when (<= (+ column 1) 9)
+      (push (list row (+ column 1)) result))
+    (when (>= (- column 1) 1)
+      (push (list row (- column 1)) result))
+    (append result (get-move-bishop row column))))  
 
     
       

@@ -17,15 +17,15 @@
   "Create the initial board of the tsume to solve indexed by letter rows and columns. Ennemy pieces are prefixed with -"
   (list :board
     (list ;Tsume 68, soluce (S 6 7) -> (+S 5 8)
-     '("" "" "" "" "" "" "" "" "")
-     '("" "" "" "" "" "" "" "" "")
-     '("" "" "" "" "" "" "L" "" "R")
-     '("" "" "" "" "" "" "S" "J" "S")
-     '("" "" "" "" "" "" "" "" "")
-     '("" "" "" "" "" "" "" "" "")
-     '("" "" "" "" "" "" "" "" "")
-     '("" "" "" "" "" "" "" "" "")
-     '("" "" "" "" "" "" "" "" ""))
+     '("_" "_" "_" "_" "_" "_" "_" "_" "_")
+     '("_" "_" "_" "_" "_" "_" "_" "_" "_")
+     '("_" "_" "_" "_" "_" "_" "L" "_" "R")
+     '("_" "_" "_" "_" "_" "_" "S" "J" "S")
+     '("_" "_" "_" "_" "_" "_" "_" "_" "_")
+     '("_" "_" "_" "_" "_" "_" "_" "_" "_")
+     '("_" "_" "_" "_" "_" "_" "_" "_" "_")
+     '("_" "_" "_" "_" "_" "_" "_" "_" "_")
+     '("_" "_" "_" "_" "_" "_" "_" "_" "_"))
     :drops '()))
 
 
@@ -39,11 +39,8 @@
     (dotimes (row 9 result)
       (dotimes (column 9 result)
 	(let ((square (list (nth column (nth row (getf board :board))))))
-	  (typecase (car square)
-	    (character
-	     (when (char-not-equal (car square) #\Null)
-	       (push (list square (get-available-move square row column)) result))))
-	  (print result))))))
+	     (when (string-not-equal (format nil (car square)) "_")
+	       (push (list square (get-available-move (format nil (car square)) row column)) result)))))))
 
 (defun get-test (board)
   "Return every possible moves + drops with the notation ('Piece' row column)"
