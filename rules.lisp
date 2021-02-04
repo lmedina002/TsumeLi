@@ -1,5 +1,6 @@
 ;;;; File containing all the functions for implementing the rules of shogi
 
+;;; Board related functions
 (defun init-empty-board ()
   "Create an empty board indexed by letter rows and columns"
   (list
@@ -14,20 +15,31 @@
    :1 '(:1 "" :2 "" :3 "" :4 "" :5 "" :6 "" :7 "" :8 "" :9 "")))
 
 (defun init-board ()
-  "Create the initial board of the tsume to solve indexed by letter rows and columns. Ennemy pieces are prefixed with -"
+  "Create the initial board of the tsume to solve indexed from 0 to 8 by rows then columns. Ennemy pieces are prefixed with -"
   (list :board
-    (list ;Tsume 68, soluce (S 6 7) -> (+S 5 8)
-     '("_" "_" "_" "_" "_" "_" "_" "_" "_")
-     '("_" "_" "_" "_" "_" "_" "_" "_" "_")
-     '("_" "_" "_" "_" "_" "_" "L" "_" "R")
-     '("_" "_" "_" "_" "_" "_" "S" "J" "S")
-     '("_" "_" "_" "_" "_" "_" "_" "_" "_")
-     '("_" "_" "_" "_" "_" "_" "_" "_" "_")
-     '("_" "_" "_" "_" "_" "_" "_" "_" "_")
-     '("_" "_" "_" "_" "_" "_" "_" "_" "_")
-     '("_" "_" "_" "_" "_" "_" "_" "_" "_"))
-    :drops '()))
+	(list ;Tsume 68, soluce (S 6 7) -> (+S 5 8)
+	 ;  0   1   2   3   4   5   6   7   8
+	 '("_" "_" "_" "_" "_" "_" "_" "_" "_") ;0
+	 '("_" "_" "_" "_" "_" "_" "_" "_" "_") ;1
+	 '("_" "_" "_" "_" "_" "_" "L" "_" "R") ;2
+	 '("_" "_" "_" "_" "_" "_" "S" "J" "S") ;3
+	 '("_" "_" "_" "_" "_" "_" "_" "_" "_") ;4
+	 '("_" "_" "_" "_" "_" "_" "_" "_" "_") ;5
+	 '("_" "_" "_" "_" "_" "_" "_" "_" "_") ;6
+	 '("_" "_" "_" "_" "_" "_" "_" "_" "_") ;7
+	 '("_" "_" "_" "_" "_" "_" "_" "_" "_"));8
+	:drops-ally '()
+	:drops-ennemy '()))
 
+;;; Win function
+(defun mate (board)
+
+  )
+
+(defun checkmate (board)
+  "Return t if the jewel on the board is checkmate"
+  ;; trouver jewel verif s'il est mat verif pour chaque move piece adverse qu'il est tjrs mat
+  )
 
 (defun select-square (board row column)
   "Return the piece on the square"
@@ -42,16 +54,6 @@
 	     (when (string-not-equal (format nil (car square)) "_")
 	       (push (list square (get-available-move (format nil (car square)) row column)) result)))))))
 
-(defun get-test (board)
-  "Return every possible moves + drops with the notation ('Piece' row column)"
-  (let* ((result))
-    (dotimes (row 9 result)
-      (dotimes (column 9 result)
-	(let ((square (list (nth column (nth row (getf board :board))))))
-	  (print square))))))
-    
-
-
 (defun get-available-move (piece row column)
   (cond ((equal piece "P") (get-move-pawn row column))
 	((equal piece "L") (get-move-lance row column))
@@ -61,105 +63,115 @@
 	((equal piece "B") (get-move-bishop row column))
 	((equal piece "R") (get-move-rook row column))
 	((equal piece "K") (get-move-king row column))
-	((equal piece "J") (get-move-king row column)) ;roi adverse a voir si utile
+	;((equal piece "J") (get-move-king row column)) ;roi adverse, get-move-king car mouvement identique entre roi et jewel meme si sens inverse
 	((equal piece "+R") (get-move-dragon row column))
 	((equal piece "+B") (get-move-horse row column))
 	((or (equal piece "+S") (equal piece "+N") (equal piece "+L") (equal piece "+P")) (get-move-gold row column))))
 
+(defun promote (piece)
+  )
+
 ;;; Utility functions
+(defun find-jewel (board)
+    (dotimes (row 9)
+      (dotimes (column 9)
+	(let ((square (list (nth column (nth row (getf board :board))))))
+	     (when (string-equal (format nil (car square)) "J")
+	       (return-from find-jewel (list row column)))))))
+
 (defun tuple-coord (rows columns)
   "Transform a list of rows and a list of columns in a list of tuple (row column)"
   (if (= (length rows) (length columns)) 
   (let* ((result))
     (dotimes (i (length rows) result)
-      (cond ((and (<= (nth i rows) 9) (>= (nth i rows) 1) (<= (nth i columns) 9) (>= (nth i columns) 1))
+      (cond ((and (<= (nth i rows) 8) (>= (nth i rows) 0) (<= (nth i columns) 8) (>= (nth i columns) 0))
 	    (push (list (nth i rows) (nth i columns)) result)))))))
 
 ;;; All get-move-... functions that return the available moves
 (defun get-move-pawn (row column)
-  (cond ((> row 1)
-	 (list (+ row 1 column)))
-	(promote "P")))
+  (cond ((> row 0)
+	 (list (list (- row 1) column))) ;double list for coherence with others get-move
+	(t (promote "P"))))
 
 (defun get-move-lance (row column)
-  (cond ((> row 1)
-	 (let* ((avail-row (remove (+ row 1) '(1 2 3 4 5 6 7 8 9) :test #'>))
+  (cond ((> row 0)
+	 (let* ((avail-row (remove (- row 1) '(0 1 2 3 4 5 6 7 8) :test #'<))
 		(avail-column (mapcar (lambda (x) (setq x column)) avail-row)))
 	   (tuple-coord avail-row avail-column)))
-	(promote "L")))
+	(t (promote "L"))))
 
 (defun get-move-knight (row column)
-  (cond ((and (> row 2) (< column 9) (> column 1))
-	 (list (list (+ row 2) (+ column 1)) (list (+ row 2) (- column 1))))
-	((and (> row 2) (= column 9))
-	 (list (list (+ row 2) (- column 1))))
-	((and (> row 2) (= column 1))
-	 (list (list (+ row 2) (+ column 1))))
-	(promote "N")))
+  (cond ((and (> row 1) (< column 8) (> column 0))
+	 (list (list (- row 2) (+ column 1)) (list (- row 2) (- column 1))))
+	((and (> row 1) (= column 8))
+	 (list (list (- row 2) (- column 1))))
+	((and (> row 1) (= column 0))
+	 (list (list (- row 2) (+ column 1))))
+	(t (promote "N"))))
 
 (defun get-move-silver (row column)
-  (let* ((all-row (list (+ row 1) (+ row 1) (+ row 1) (- row 1) (- row 1)))
+  (let* ((all-row (list (- row 1) (- row 1) (- row 1) (+ row 1) (+ row 1)))
 	 (all-column (list (+ column 1) column (- column 1) (+ column 1) (- column 1))))
     (tuple-coord all-row all-column)))
 
 (defun get-move-gold (row column)
-  (let* ((all-row (list (+ row 1) (+ row 1) (+ row 1) row row (- row 1)))
+  (let* ((all-row (list (- row 1) (- row 1) (- row 1) row row (+ row 1)))
 	 (all-column (list (+ column 1) column (- column 1) (+ column 1) (- column 1) column)))
     (tuple-coord all-row all-column)))
 
 (defun get-move-bishop (row column)
   (let* ((result))
     (dotimes (i 9 result)
-      (when (and (/= i 0) (<= (+ row i) 9) (<= (+ column i) 9))
+      (when (and (/= i 0) (<= (+ row i) 8) (<= (+ column i) 8))
 	(push (list (+ row i) (+ column i)) result))
-      (when (and (/= i 0) (<= (+ row i) 9) (>= (- column i) 1))
+      (when (and (/= i 0) (<= (+ row i) 8) (>= (- column i) 0))
 	(push (list (+ row i) (- column i)) result))
-      (when (and (/= i 0) (>= (- row i) 1) (<= (+ column i) 9))
+      (when (and (/= i 0) (>= (- row i) 0) (<= (+ column i) 8))
 	(push (list (- row i) (+ column i)) result))
-      (when (and (/= i 0) (>= (- row i) 1) (>= (- column i) 1))
+      (when (and (/= i 0) (>= (- row i) 0) (>= (- column i) 0))
 	(push (list (- row i) (- column i)) result)))))
 
 (defun get-move-rook (row column)
   (let* ((result))
     (dotimes (i 9 result)
-      (when (and (/= i 0) (<= (+ row i) 9))
+      (when (and (/= i 0) (<= (+ row i) 8))
 	(push (list (+ row i) column) result))
-      (when (and (/= i 0) (>= (- row i) 1))
+      (when (and (/= i 0) (>= (- row i) 0))
 	(push (list (- row i) column) result))
-      (when (and (/= i 0) (<= (+ column i) 9))
+      (when (and (/= i 0) (<= (+ column i) 8))
 	(push (list row (+ column i)) result))
-      (when (and (/= i 0) (>= (- column i) 1))
+      (when (and (/= i 0) (>= (- column i) 0))
 	(push (list row (- column i)) result)))))
 
 (defun get-move-king (row column)
   (let* ((result)) ;Moves from a gold general with 2 additionnal moves
-    (when (and (>= (- row 1) 1) (>= (- column 1) 1))
-      (push (list (- row 1) (- column 1)) result))      
-    (when (and (>= (- row 1) 1) (<= (+ column 1) 9))
-      (push (list (- row 1) (+ column 1)) result))
+    (when (and (<= (+ row 1) 8) (>= (- column 1) 0))
+      (push (list (+ row 1) (- column 1)) result))      
+    (when (and (<= (+ row 1) 8) (<= (+ column 1) 8))
+      (push (list (+ row 1) (+ column 1)) result))
     (append result (get-move-gold row column))))
 
 (defun get-move-dragon (row column)
   (let* ((result))
-    (when (and (<= (+ row 1) 9) (<= (+ column 1) 9))
+    (when (and (<= (+ row 1) 8) (<= (+ column 1) 8))
       (push (list (+ row 1) (+ column 1)) result))
-    (when (and (<= (+ row 1) 9) (>= (- column 1) 1))
+    (when (and (<= (+ row 1) 8) (>= (- column 1) 0))
       (push (list (+ row 1) (- column 1)) result))
-    (when (and (>= (- row 1) 1) (<= (+ column 1) 9))
+    (when (and (>= (- row 1) 0) (<= (+ column 1) 8))
       (push (list (- row 1) (+ column 1)) result))
-    (when (and (>= (- row 1) 1) (>= (- column 1) 1))
+    (when (and (>= (- row 1) 0) (>= (- column 1) 0))
       (push (list (- row 1) (- column 1)) result))
     (append result (get-move-rook row column))))
 
 (defun get-move-horse (row column)
   (let* ((result))
-    (when (<= (+ row 1) 9)
+    (when (<= (+ row 1) 8)
       (push (list (+ row 1) column) result))
-    (when (>= (- row 1) 1)
+    (when (>= (- row 1) 0)
       (push (list (- row 1) column) result))
-    (when (<= (+ column 1) 9)
+    (when (<= (+ column 1) 8)
       (push (list row (+ column 1)) result))
-    (when (>= (- column 1) 1)
+    (when (>= (- column 1) 0)
       (push (list row (- column 1)) result))
     (append result (get-move-bishop row column))))  
 

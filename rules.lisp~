@@ -1,5 +1,6 @@
 ;;;; File containing all the functions for implementing the rules of shogi
 
+;;; Board related functions
 (defun init-empty-board ()
   "Create an empty board indexed by letter rows and columns"
   (list
@@ -17,17 +18,27 @@
   "Create the initial board of the tsume to solve indexed by letter rows and columns. Ennemy pieces are prefixed with -"
   (list :board
     (list ;Tsume 68, soluce (S 6 7) -> (+S 5 8)
-     '("" "" "" "" "" "" "" "" "")
-     '("" "" "" "" "" "" "" "" "")
-     '("" "" "" "" "" "" "L" "" "R")
-     '("" "" "" "" "" "" "S" "J" "S")
-     '("" "" "" "" "" "" "" "" "")
-     '("" "" "" "" "" "" "" "" "")
-     '("" "" "" "" "" "" "" "" "")
-     '("" "" "" "" "" "" "" "" "")
-     '("" "" "" "" "" "" "" "" ""))
-    :drops '()))
+     '("_" "_" "_" "_" "_" "_" "_" "_" "_")
+     '("_" "_" "_" "_" "_" "_" "_" "_" "_")
+     '("_" "_" "_" "_" "_" "_" "L" "_" "R")
+     '("_" "_" "_" "_" "_" "_" "S" "J" "S")
+     '("_" "_" "_" "_" "_" "_" "_" "_" "_")
+     '("_" "_" "_" "_" "_" "_" "_" "_" "_")
+     '("_" "_" "_" "_" "_" "_" "_" "_" "_")
+     '("_" "_" "_" "_" "_" "_" "_" "_" "_")
+     '("_" "_" "_" "_" "_" "_" "_" "_" "_"))
+	:drops-ally '()
+	:drops-ennemy '()))
 
+;;; Win function
+(defun mate (board)
+
+  )
+
+(defun checkmate (board)
+  "Return t if the jewel on the board is checkmate"
+  ;; trouver jewel verif s'il est mat verif pour chaque move piece adverse qu'il est tjrs mat
+  )
 
 (defun select-square (board row column)
   "Return the piece on the square"
@@ -39,21 +50,8 @@
     (dotimes (row 9 result)
       (dotimes (column 9 result)
 	(let ((square (list (nth column (nth row (getf board :board))))))
-	  (typecase (car square)
-	    (character
-	     (when (char-not-equal (car square) #\Null)
-	       (push (list square (get-available-move square row column)) result))))
-	  (print result))))))
-
-(defun get-test (board)
-  "Return every possible moves + drops with the notation ('Piece' row column)"
-  (let* ((result))
-    (dotimes (row 9 result)
-      (dotimes (column 9 result)
-	(let ((square (list (nth column (nth row (getf board :board))))))
-	  (print square))))))
-    
-
+	     (when (string-not-equal (format nil (car square)) "_")
+	       (push (list square (get-available-move (format nil (car square)) row column)) result)))))))
 
 (defun get-available-move (piece row column)
   (cond ((equal piece "P") (get-move-pawn row column))
@@ -69,7 +67,18 @@
 	((equal piece "+B") (get-move-horse row column))
 	((or (equal piece "+S") (equal piece "+N") (equal piece "+L") (equal piece "+P")) (get-move-gold row column))))
 
+(defun promote (piece)
+  )
+
 ;;; Utility functions
+(defun find-jewel (board)
+  (let* ((result))
+    (dotimes (row 9 result)
+      (dotimes (column 9 result)
+	(let ((square (list (nth column (nth row (getf board :board))))))
+	     (when (string-equal (format nil (car square)) "J")
+	       (push (list row column) result)))))))
+
 (defun tuple-coord (rows columns)
   "Transform a list of rows and a list of columns in a list of tuple (row column)"
   (if (= (length rows) (length columns)) 
