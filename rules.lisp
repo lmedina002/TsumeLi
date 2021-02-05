@@ -31,10 +31,13 @@
 	:drops-ally '()
 	:drops-ennemy '()))
 
-;;; Win function
+;;; Win functions
 (defun mate (board)
-
-  )
+  (let ((moves (get-all board))
+	(jewel (find-jewel board)))
+    (dolist (pieces moves)
+      (dolist (location (second pieces))
+	(if (equal location jewel) (return-from mate t))))))
 
 (defun checkmate (board)
   "Return t if the jewel on the board is checkmate"
