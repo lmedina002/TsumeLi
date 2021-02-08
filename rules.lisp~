@@ -31,10 +31,13 @@
 	:drops-ally '()
 	:drops-ennemy '()))
 
-;;; Win function
+;;; Win functions
 (defun mate (board)
-
-  )
+  (let ((moves (get-all-ally board))
+	(jewel (find-jewel board)))
+    (dolist (pieces moves)
+      (dolist (location (second pieces))
+	(if (equal location jewel) (return-from mate t))))))
 
 (defun checkmate (board)
   "Return t if the jewel on the board is checkmate"
@@ -45,16 +48,16 @@
   "Return the piece on the square"
   (getf (getf board row) column))
 
-(defun get-all (board)
+(defun get-all-ally (board)
   "Return every possible moves + drops with the notation ('Piece' row column)"
   (let* ((result))
     (dotimes (row 9 result)
       (dotimes (column 9 result)
 	(let ((square (list (nth column (nth row (getf board :board))))))
 	     (when (string-not-equal (format nil (car square)) "_")
-	       (push (list square (get-available-move (format nil (car square)) row column)) result)))))))
+	       (push (list square (get-available-move-ally (format nil (car square)) row column)) result)))))))
 
-(defun get-available-move (piece row column)
+(defun get-available-move-ally (piece row column)
   (cond ((equal piece "P") (get-move-pawn row column))
 	((equal piece "L") (get-move-lance row column))
 	((equal piece "N") (get-move-knight row column))
