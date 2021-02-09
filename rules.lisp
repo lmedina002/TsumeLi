@@ -18,27 +18,27 @@
 
 (defun init-board ()
   "Create the initial board of the tsume to solve indexed from 0 to 8 by rows then columns. Ennemy pieces are prefixed with -"
-  (list :board
-	(list ;Tsume 68, soluce (S 6 7) -> (+S 5 8)
+  (make-array '(9 9)
+	:initial-contents ;Tsume 68, soluce (S 6 7) -> (+S 4 7)
 	 ;  0   1   2   3   4   5   6   7   8
-	 '("_" "_" "_" "_" "_" "_" "_" "_" "_") ;0
-	 '("_" "_" "_" "_" "_" "_" "_" "_" "_") ;1
-	 '("_" "_" "_" "_" "_" "_" "L" "_" "R") ;2
-	 '("_" "_" "_" "_" "_" "_" "S" "J" "S") ;3
-	 '("_" "_" "_" "_" "_" "_" "_" "_" "_") ;4
-	 '("_" "_" "_" "_" "_" "_" "_" "_" "_") ;5
-	 '("_" "_" "_" "_" "_" "_" "_" "_" "_") ;6
-	 '("_" "_" "_" "_" "_" "_" "_" "_" "_") ;7
-	 '("_" "_" "_" "_" "_" "_" "_" "_" "_"));8
-	:drops-ally '()
-	:drops-ennemy '()))
+	 '(("_" "_" "_" "_" "_" "_" "_" "_" "_") ;0
+	 ("_" "_" "_" "_" "_" "_" "_" "_" "_") ;1
+	 ("_" "_" "_" "_" "_" "_" "L" "_" "R") ;2
+	 ("_" "_" "_" "_" "_" "_" "_" "-J" "S") ;3
+	 ("_" "_" "_" "_" "_" "_" "_" "P" "_") ;4
+	 ("_" "_" "_" "_" "_" "_" "_" "_" "_") ;5
+	 ("_" "_" "_" "_" "_" "_" "_" "_" "_") ;6
+	 ("_" "_" "_" "_" "_" "_" "_" "_" "_") ;7
+	 ("_" "_" "_" "_" "_" "_" "_" "_" "_"))));8
+
 
 ;;;----------------------------------------------------------------------------------------------
 ;;; Win functions
 
 (defun mate (board)
+  (print board)
   (let ((moves (get-all-ally board))
-	(jewel (find-piece "J" board)))
+	(jewel (find-piece "-J" board)))
     (dolist (pieces moves)
       (dolist (location (second pieces))
 	(if (equal location jewel) (return-from mate t))))))
@@ -48,16 +48,21 @@
   ;; trouver jewel verif s'il est mat verif pour chaque move piece adverse qu'il est tjrs mat
   (when (mate board)
     (let ((moves (get-all-enemy board)))
-      (dolist (pieces moves)
+      ;(print moves)
+      (dolist (pieces moves)	
 	(dolist (location (second pieces))
-	  (when (not (mate (move-piece board ...)))
-	    (return-from checkmate nil))))))
-  (return-from checkmate t))
+	  ;(print pieces)
+	  ;(print location)
+	  (when (not (mate (move-piece board (first pieces) location)))
+	    (return-from checkmate nil))))
+      (return-from checkmate t))))
 
 (defun move-piece (board piece location)
-  (let ((result (copy-list board))
+  "Return a copy from the board with the piece moved to the location"
+  (let ((result (copy-array board))
 	(initial (find-piece piece board)))
-    (setf (nth (first location) (getf result :board)) piece)
+    (setf (aref result (first location) (second location)) piece)
+    (setf (aref result (first initial) (second initial)) "_")
     (return-from move-piece result)))
     
 	
@@ -71,9 +76,9 @@
   (let* ((result))
     (dotimes (row 9 result)
       (dotimes (column 9 result)
-	(let ((square (list (nth column (nth row (getf board :board))))))
-	     (when (string-not-equal (format nil (car square)) "_")
-	       (push (list square (get-available-move-ally (format nil (car square)) row column)) result)))))))
+	(let ((square (aref board row column)))
+	     (when (and (string-not-equal square  "_") (string-not-equal (subseq square 0 1) "-"))
+	       (push (list square (get-available-move-ally square row column)) result)))))))
 
 (defun get-available-move-ally (piece row column)
   (cond ((equal piece "P") (get-move-pawn-ally row column))
@@ -93,9 +98,9 @@
   (let* ((result))
     (dotimes (row 9 result)
       (dotimes (column 9 result)
-	(let ((square (list (nth column (nth row (getf board :board))))))
-	     (when (string-not-equal (format nil (car square)) "_")
-	       (push (list square (get-available-move-enemy (format nil (car square)) row column)) result)))))))
+	(let ((square (aref board row column)))
+	     (when (and (string-not-equal square  "_") (equal (subseq square 0 1) "-"))
+	       (push (list square (get-available-move-enemy square row column)) result)))))))
 
 (defun get-available-move-enemy (piece row column)
   (cond ((equal piece "-P") (get-move-pawn-enemy row column))
@@ -105,7 +110,7 @@
 	((equal piece "-G") (get-move-gold-enemy row column))
 	((equal piece "-B") (get-move-bishop-enemy row column))
 	((equal piece "-R") (get-move-rook-enemy row column))
-	((equal piece "J") (get-move-king-enemy row column))
+	((equal piece "-J") (get-move-king-enemy row column))
 	((equal piece "-+R") (get-move-dragon-enemy row column))
 	((equal piece "-+B") (get-move-horse-enemy row column))
 	((or (equal piece "-+S") (equal piece "-+N") (equal piece "-+L") (equal piece "-+P")) (get-move-gold-enemy row column))))
@@ -122,8 +127,8 @@
 (defun find-piece (piece board)
     (dotimes (row 9)
       (dotimes (column 9)
-	(let ((square (list (nth column (nth row (getf board :board))))))
-	     (when (string-equal (format nil (car square)) piece)
+	(let ((square (aref board row column)))
+	     (when (string-equal square piece)
 	       (return-from find-piece (list row column)))))))
 
 (defun tuple-coord (rows columns)
@@ -133,6 +138,26 @@
     (dotimes (i (length rows) result)
       (cond ((and (<= (nth i rows) 8) (>= (nth i rows) 0) (<= (nth i columns) 8) (>= (nth i columns) 0))
 	     (push (list (nth i rows) (nth i columns)) result)))))))
+
+;Function taken from the library Alexandria to copy arrays
+(defun copy-array (array &key
+                   (element-type (array-element-type array))
+                   (fill-pointer (and (array-has-fill-pointer-p array)
+                                      (fill-pointer array)))
+                   (adjustable (adjustable-array-p array)))
+  "Returns an undisplaced copy of ARRAY, with same fill-pointer and adjustability (if any) as the original, unless overridden by the keyword
+arguments. Performance depends on efficiency of general ADJUST-ARRAY in the host lisp -- for most cases a special purpose copying function is likely to
+perform better."
+  (let ((dims (array-dimensions array)))
+    ;; Dictionary entry for ADJUST-ARRAY requires adjusting a
+    ;; displaced array to a non-displaced one to make a copy.
+    (adjust-array
+     (make-array dims
+                 :element-type element-type :fill-pointer fill-pointer
+                 :adjustable adjustable :displaced-to array)
+     dims)))
+
+
 
 
 ;;;----------------------------------------------------------------------------------------------

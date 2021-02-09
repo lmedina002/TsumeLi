@@ -38,7 +38,7 @@
 
 (defun mate (board)
   (let ((moves (get-all-ally board))
-	(jewel (find-jewel board)))
+	(jewel (find-piece "J" board)))
     (dolist (pieces moves)
       (dolist (location (second pieces))
 	(if (equal location jewel) (return-from mate t))))))
@@ -46,8 +46,22 @@
 (defun checkmate (board)
   "Return t if the jewel on the board is checkmate"
   ;; trouver jewel verif s'il est mat verif pour chaque move piece adverse qu'il est tjrs mat
-  )
+  (when (mate board)
+    (let ((moves (get-all-enemy board)))
+      (dolist (pieces moves)
+	(dolist (location (second pieces))
+	  (when (not (mate (move-piece board ...)))
+	    (return-from checkmate nil))))))
+  (return-from checkmate t))
 
+(defun move-piece (board piece location)
+  (let ((result (copy-list board))
+	(initial (find-piece piece board)))
+    (setf (nth (first location) (getf result :board)) piece)
+    (return-from move-piece result)))
+    
+	
+    
 (defun select-square (board row column)
   "Return the piece on the square"
   (getf (getf board row) column))
@@ -91,7 +105,7 @@
 	((equal piece "-G") (get-move-gold-enemy row column))
 	((equal piece "-B") (get-move-bishop-enemy row column))
 	((equal piece "-R") (get-move-rook-enemy row column))
-	((equal piece "-K") (get-move-king-enemy row column))
+	((equal piece "J") (get-move-king-enemy row column))
 	((equal piece "-+R") (get-move-dragon-enemy row column))
 	((equal piece "-+B") (get-move-horse-enemy row column))
 	((or (equal piece "-+S") (equal piece "-+N") (equal piece "-+L") (equal piece "-+P")) (get-move-gold-enemy row column))))
@@ -105,12 +119,12 @@
 ;;;----------------------------------------------------------------------------------------------
 ;;; Utility functions
 
-(defun find-jewel (board)
+(defun find-piece (piece board)
     (dotimes (row 9)
       (dotimes (column 9)
 	(let ((square (list (nth column (nth row (getf board :board))))))
-	     (when (string-equal (format nil (car square)) "J")
-	       (return-from find-jewel (list row column)))))))
+	     (when (string-equal (format nil (car square)) piece)
+	       (return-from find-piece (list row column)))))))
 
 (defun tuple-coord (rows columns)
   "Transform a list of rows and a list of columns in a list of tuple (row column)"
