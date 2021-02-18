@@ -23,11 +23,11 @@
 	 ;  0   1   2   3   4   5   6   7   8
 	 '(("_" "_" "_" "_" "_" "_" "_" "_" "_") ;0
 	 ("_" "_" "_" "_" "_" "_" "_" "_" "_") ;1
-	 ("_" "_" "_" "_" "_" "_" "L_" "_" "R") ;2
+	 ("_" "_" "_" "_" "_" "_" "L" "_" "R") ;2
 	 ("_" "_" "_" "_" "_" "_" "_" "-J" "S") ;3
 	 ("_" "_" "_" "_" "_" "_" "P" "P" "_") ;4
 	 ("_" "_" "_" "_" "_" "_" "_" "_" "_") ;5
-	 ("_" "_" "_" "_" "_" "_" "_" "_" "_") ;6
+	 ("_" "_" "_" "_" "_" "_" "K" "_" "_") ;6
 	 ("_" "_" "_" "_" "_" "_" "P" "_" "_") ;7
 	 ("_" "_" "_" "_" "_" "_" "_" "_" "_"))));8
 
@@ -81,17 +81,17 @@
 	       (push (list square (get-available-move-ally square row column board)) result)))))))
 
 (defun get-available-move-ally (piece row column board)
-  (cond ((equal piece "P") (get-move-pawn-ally row column))
+  (cond ((equal piece "P") (get-move-pawn-ally row column board))
 	((equal piece "L") (get-move-lance-ally row column board))
-	((equal piece "N") (get-move-knight-ally row column))
-	((equal piece "S") (get-move-silver-ally row column))
-	((equal piece "G") (get-move-gold-ally row column))
-	((equal piece "B") (get-move-bishop-ally row column))
-	((equal piece "R") (get-move-rook-ally row column))
-	((equal piece "K") (get-move-king-ally row column))
-	((equal piece "+R") (get-move-dragon-ally row column))
-	((equal piece "+B") (get-move-horse-ally row column))
-	((or (equal piece "+S") (equal piece "+N") (equal piece "+L") (equal piece "+P")) (get-move-gold-ally row column))))
+	((equal piece "N") (get-move-knight-ally row column board))
+	((equal piece "S") (get-move-silver-ally row column board))
+	((equal piece "G") (get-move-gold-ally row column board))
+	((equal piece "B") (get-move-bishop-ally row column board))
+	((equal piece "R") (get-move-rook-ally row column board))
+	((equal piece "K") (get-move-king-ally row column board))
+	((equal piece "+R") (get-move-dragon-ally row column board))
+	((equal piece "+B") (get-move-horse-ally row column board))
+	((or (equal piece "+S") (equal piece "+N") (equal piece "+L") (equal piece "+P")) (get-move-gold-ally row column board))))
 
 (defun get-all-enemy (board)
   "Return every possible moves + drops for enemy pieces with the notation ('Piece' row column)"
@@ -103,17 +103,17 @@
 	       (push (list square (get-available-move-enemy square row column board)) result)))))))
 
 (defun get-available-move-enemy (piece row column)
-  (cond ((equal piece "-P") (get-move-pawn-enemy row column))
+  (cond ((equal piece "-P") (get-move-pawn-enemy row column board))
 	((equal piece "-L") (get-move-lance-enemy row column board))
-	((equal piece "-N") (get-move-knight-enemy row column))
-	((equal piece "-S") (get-move-silver-enemy row column))
-	((equal piece "-G") (get-move-gold-enemy row column))
-	((equal piece "-B") (get-move-bishop-enemy row column))
-	((equal piece "-R") (get-move-rook-enemy row column))
-	((equal piece "-J") (get-move-king-enemy row column))
-	((equal piece "-+R") (get-move-dragon-enemy row column))
-	((equal piece "-+B") (get-move-horse-enemy row column))
-	((or (equal piece "-+S") (equal piece "-+N") (equal piece "-+L") (equal piece "-+P")) (get-move-gold-enemy row column))))
+	((equal piece "-N") (get-move-knight-enemy row column board))
+	((equal piece "-S") (get-move-silver-enemy row column board))
+	((equal piece "-G") (get-move-gold-enemy row column board))
+	((equal piece "-B") (get-move-bishop-enemy row column board))
+	((equal piece "-R") (get-move-rook-enemy row column board))
+	((equal piece "-J") (get-move-king-enemy row column board))
+	((equal piece "-+R") (get-move-dragon-enemy row column board))
+	((equal piece "-+B") (get-move-horse-enemy row column board))
+	((or (equal piece "-+S") (equal piece "-+N") (equal piece "-+L") (equal piece "-+P")) (get-move-gold-enemy row column board))))
 
 (defun promote (piece)
   "Return the string corresponding to the promotion of the given piece"
@@ -125,6 +125,12 @@
 ;;; Utility functions
 (defun is-piece (row column board)
   (string-not-equal (aref board row column) "_"))
+
+(defun is-ally (row column board)
+  (and (char-not-equal (char (aref board row column) 0) #\_) (char-not-equal (char (aref board row column) 0) #\-)))
+
+(defun is-enemy (row column board)
+  (char-equal (char (aref board row column) 0) #\-))
   
 
 (defun find-piece (piece board)
@@ -166,8 +172,8 @@ perform better."
 ;;;----------------------------------------------------------------------------------------------
 ;;; All get-move-...-ally  functions that return the available moves for the "ally" pieces
 
-(defun get-move-pawn-ally (row column)
-  (cond ((> row 0)
+(defun get-move-pawn-ally (row column board)
+  (cond ((and (> row 0) (not (is-ally (- row 1) column board))) 
 	 (list (list (- row 1) column))) ;double list for coherence with others get-move
 	(t (promote "P"))))
 
@@ -175,12 +181,15 @@ perform better."
   (cond ((> row 0)
 	 (let* ((avail-row (remove (- row 1) '(0 1 2 3 4 5 6 7 8) :test #'<)))
 	   (dolist (item avail-row)    
-	     (when (is-piece item column board)
-	       (setq avail-row (remove item avail-row :test #'>))))
+	     (cond
+	       ((and (is-piece item column board) (is-enemy item column board))
+		(setq avail-row (remove item avail-row :test #'>)))
+	       ((and (is-piece item column board) (is-ally item column board))
+		(setq avail-row (remove (- item 1) avail-row :test #'>)))))
 	   (tuple-coord avail-row (mapcar (lambda (x) (setq x column)) avail-row))))
 	(t (promote "L"))))
 
-(defun get-move-knight-ally (row column)
+(defun get-move-knight-ally (row column board)
   (cond ((and (> row 1) (< column 8) (> column 0))
 	 (list (list (- row 2) (+ column 1)) (list (- row 2) (- column 1))))
 	((and (> row 1) (= column 8))
@@ -189,17 +198,17 @@ perform better."
 	 (list (list (- row 2) (+ column 1))))
 	(t (promote "N"))))
 
-(defun get-move-silver-ally (row column)
+(defun get-move-silver-ally (row column board)
   (let* ((all-row (list (- row 1) (- row 1) (- row 1) (+ row 1) (+ row 1)))
 	 (all-column (list (+ column 1) column (- column 1) (+ column 1) (- column 1))))
     (tuple-coord all-row all-column)))
 
-(defun get-move-gold-ally (row column)
+(defun get-move-gold-ally (row column board)
   (let* ((all-row (list (- row 1) (- row 1) (- row 1) row row (+ row 1)))
 	 (all-column (list (+ column 1) column (- column 1) (+ column 1) (- column 1) column)))
     (tuple-coord all-row all-column)))
 
-(defun get-move-bishop-ally (row column)
+(defun get-move-bishop-ally (row column board)
   (let* ((result))
     (dotimes (i 9 result)
       (when (and (/= i 0) (<= (+ row i) 8) (<= (+ column i) 8))
@@ -211,7 +220,7 @@ perform better."
       (when (and (/= i 0) (>= (- row i) 0) (>= (- column i) 0))
 	(push (list (- row i) (- column i)) result)))))
 
-(defun get-move-rook-ally (row column)
+(defun get-move-rook-ally (row column board)
   (let* ((result))
     (dotimes (i 9 result)
       (when (and (/= i 0) (<= (+ row i) 8))
@@ -223,15 +232,15 @@ perform better."
       (when (and (/= i 0) (>= (- column i) 0))
 	(push (list row (- column i)) result)))))
 
-(defun get-move-king-ally (row column)
+(defun get-move-king-ally (row column board)
   (let* ((result)) ;Moves from a gold general with 2 additionnal moves
     (when (and (<= (+ row 1) 8) (>= (- column 1) 0))
       (push (list (+ row 1) (- column 1)) result))      
     (when (and (<= (+ row 1) 8) (<= (+ column 1) 8))
       (push (list (+ row 1) (+ column 1)) result))
-    (append result (get-move-gold-ally row column))))
+    (append result (get-move-gold-ally row column board))))
 
-(defun get-move-dragon-ally (row column)
+(defun get-move-dragon-ally (row column board)
   (let* ((result))
     (when (and (<= (+ row 1) 8) (<= (+ column 1) 8))
       (push (list (+ row 1) (+ column 1)) result))
@@ -241,9 +250,9 @@ perform better."
       (push (list (- row 1) (+ column 1)) result))
     (when (and (>= (- row 1) 0) (>= (- column 1) 0))
       (push (list (- row 1) (- column 1)) result))
-    (append result (get-move-rook-ally row column))))
+    (append result (get-move-rook-ally row column board))))
 
-(defun get-move-horse-ally (row column)
+(defun get-move-horse-ally (row column board)
   (let* ((result))
     (when (<= (+ row 1) 8)
       (push (list (+ row 1) column) result))
@@ -253,13 +262,13 @@ perform better."
       (push (list row (+ column 1)) result))
     (when (>= (- column 1) 0)
       (push (list row (- column 1)) result))
-    (append result (get-move-bishop-ally row column))))
+    (append result (get-move-bishop-ally row column board))))
 
 
 ;;;----------------------------------------------------------------------------------------------
 ;;; All get-move-...-enemy  functions that return the available moves for the "enemy" pieces
 
-(defun get-move-pawn-enemy (row column)
+(defun get-move-pawn-enemy (row column board)
   (cond ((< row 8)
 	 (list (list (+ row 1) column))) ;double list for coherence with others get-move
 	(t (promote "P"))))
@@ -273,7 +282,7 @@ perform better."
 	   (tuple-coord avail-row (mapcar (lambda (x) (setq x column)) avail-row))))
 	(t (promote "L"))))
 
-(defun get-move-knight-enemy (row column)
+(defun get-move-knight-enemy (row column board)
   (cond ((and (< row 7) (< column 8) (> column 0))
 	 (list (list (+ row 2) (+ column 1)) (list (+ row 2) (- column 1))))
 	((and (< row 7) (= column 8))
@@ -282,30 +291,30 @@ perform better."
 	 (list (list (+ row 2) (+ column 1))))
 	(t (promote "N"))))
 
-(defun get-move-silver-enemy (row column)
+(defun get-move-silver-enemy (row column board)
   (let* ((all-row (list (+ row 1) (+ row 1) (+ row 1) (- row 1) (- row 1)))
 	 (all-column (list (+ column 1) column (- column 1) (+ column 1) (- column 1))))
     (tuple-coord all-row all-column)))
 
-(defun get-move-gold-enemy (row column)
+(defun get-move-gold-enemy (row column board)
   (let* ((all-row (list (+ row 1) (+ row 1) (+ row 1) row row (- row 1)))
 	 (all-column (list (+ column 1) column (- column 1) (+ column 1) (- column 1) column)))
     (tuple-coord all-row all-column)))
 
-(defun get-move-bishop-enemy (row column)
-  (get-move-bishop-ally row column))
+(defun get-move-bishop-enemy (row column board)
+  (get-move-bishop-ally row column board))
 
-(defun get-move-rook-ennemy (row column)
-  (get-move-rook-ally row column))
+(defun get-move-rook-enemy (row column board)
+  (get-move-rook-ally row column board))
 
-(defun get-move-king-enemy (row column)
-  (get-move-king-ally row column))
+(defun get-move-king-enemy (row column board)
+  (get-move-king-ally row column board))
 
-(defun get-move-dragon-enemy (row column)
-  (get-move-dragon-ally row column))
+(defun get-move-dragon-enemy (row column board)
+  (get-move-dragon-ally row column board))
 
-(defun get-move-horse-enemy (row column)
-  (get-move-horse-ally row column)) 
+(defun get-move-horse-enemy (row column board)
+  (get-move-horse-ally row column board)) 
 
 
     
