@@ -304,7 +304,7 @@ perform better."
 (defun get-move-bishop-enemy (row column board)
   (get-move-bishop-ally row column board))
 
-(defun get-move-rook-ennemy (row column board)
+(defun get-move-rook-enemy (row column board)
   (get-move-rook-ally row column board))
 
 (defun get-move-king-enemy (row column board)

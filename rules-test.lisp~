@@ -13,7 +13,7 @@
 	 ("_" "_" "_" "_" "_" "_" "K" "_" "_") ;6
 	 ("_" "_" "_" "_" "_" "_" "P" "_" "_") ;7
 	   ("_" "_" "_" "_" "_" "_" "_" "_" "_")))));8
-  (cond ((and (equal (get-move-pawn-ally 4 6 board) '((3 6))) (string-equal (get-move-pawn-ally 6 7 board) "+P"))
+  (cond ((and (equal (get-move-pawn-ally 4 6 board) '((3 6))) (string-equal (get-move-pawn-ally 7 6 board) "+P"))
 	 (print "get-move-pawn-ally: OK"))
 	(t (print "get-move-pawn-enemy: NIL"))))
   

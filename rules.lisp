@@ -185,7 +185,7 @@ perform better."
 	       ((and (is-piece item column board) (is-enemy item column board))
 		(setq avail-row (remove item avail-row :test #'>)))
 	       ((and (is-piece item column board) (is-ally item column board))
-		(setq avail-row (remove (- item 1) avail-row :test #'>)))))
+		(setq avail-row (remove (+ item 1) avail-row :test #'>)))))
 	   (tuple-coord avail-row (mapcar (lambda (x) (setq x column)) avail-row))))
 	(t (promote "L"))))
 
