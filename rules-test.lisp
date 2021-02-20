@@ -6,7 +6,7 @@
 (let ((board (make-array '(9 9)
 	 :initial-contents
 	 ; 0   1   2   3   4   5   6   7   8
-	 '(("L" "_" "_" "_" "_" "_" "_" "_" "_") ;0
+	 '(("L" "+B" "_" "_" "_" "_" "_" "_" "_") ;0
 	 ("_" "_" "N" "_" "_" "_" "_" "_" "_") ;1
 	 ("_" "_" "-P" "P" "_" "_" "L" "_" "R") ;2
 	 ("_" "_" "_" "_" "_" "_" "_" "-J" "S") ;3
@@ -14,7 +14,7 @@
 	 ("_" "_" "L" "L" "_" "-P" "_" "_" "_") ;5
 	 ("_" "_" "_" "_" "_" "_" "K" "_" "-P") ;6
 	 ("R" "_" "_" "_" "N" "_" "P" "_" "G") ;7
-	 ("-P" "_" "_" "_" "_" "_" "_" "_" "P")))));8
+	 ("-P" "_" "_" "+R" "_" "_" "_" "_" "P")))));8
   (cond ((and (equal (get-move-pawn-ally 4 6 board) '((3 6))) (string-equal (get-move-pawn-ally 7 6 board) "+P"))
 	 (format t "~%get-move-pawn-ally: OK"))
 	(t (format t "~%get-move-pawn-ally: NIL")))
@@ -56,8 +56,18 @@
 				(list '(6 8) '(6 7) '(7 7)) :test #'equal)
 		NIL)
 	 (format t "~%get-move-gold-ally: OK"))
-	(t (format t "~%get-move-gold-ally: NIL"))))
-; todo: dragon + horse
+	(t (format t "~%get-move-gold-ally: NIL")))
+  (cond ((equal (set-difference (get-move-horse-ally 0 1 board)
+				(list '(1 0) '(1 1) '(0 2)) :test #'equal)
+		NIL)
+	 (format t "~%get-move-horse-ally: OK"))
+	(t (format t "~%get-move-horse-ally: NIL")))
+  (cond ((equal (set-difference (get-move-dragon-ally 8 3 board)
+				(list '(8 0) '(8 1) '(8 2) '(8 4) '(8 5) '(8 6) '(8 7) '(7 3) '(6 3) '(7 2)) :test #'equal)
+		NIL)
+	 (format t "~%get-move-dragon-ally: OK"))
+	(t (format t "~%get-move-dragon-ally: NIL"))))
+
 
 
 
