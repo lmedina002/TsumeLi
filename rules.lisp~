@@ -18,18 +18,23 @@
 
 (defun init-board ()
   "Create the initial board of the tsume to solve indexed from 0 to 8 by rows then columns. Ennemy pieces are prefixed with -"
-  (make-array '(9 9)
-	:initial-contents ;Tsume 68, soluce (S 6 7) -> (+S 4 7)
-	 ;  0   1   2   3   4   5   6   7   8
-	 '(("_" "_" "_" "_" "_" "_" "_" "_" "_") ;0
-	 ("_" "_" "_" "_" "_" "_" "_" "_" "_") ;1
-	 ("_" "_" "_" "_" "_" "_" "L" "_" "R") ;2
-	 ("_" "_" "_" "_" "_" "_" "_" "-J" "S") ;3
-	 ("_" "_" "_" "_" "_" "_" "P" "P" "_") ;4
-	 ("_" "_" "_" "_" "_" "_" "_" "_" "_") ;5
-	 ("_" "_" "_" "_" "_" "_" "K" "_" "_") ;6
-	 ("_" "_" "_" "_" "_" "_" "P" "_" "_") ;7
-	 ("_" "_" "_" "_" "_" "_" "_" "_" "_"))));8
+  (list :board
+	(make-array '(9 9)
+		    :initial-contents ;Tsume 68, soluce (S 6 7) -> (+S 4 7)
+		      ; 0   1   2   3   4   5   6   7   8
+		    '(("_" "_" "_" "_" "_" "_" "_" "_" "_") ;0
+		      ("_" "_" "_" "_" "_" "_" "_" "_" "_") ;1
+		      ("_" "_" "_" "_" "_" "_" "L" "_" "R") ;2
+		      ("_" "_" "_" "_" "_" "_" "_" "-J" "S") ;3
+		      ("_" "_" "_" "_" "_" "_" "P" "P" "_") ;4
+		      ("_" "_" "_" "_" "_" "_" "_" "_" "_") ;5
+		      ("_" "_" "_" "_" "_" "_" "K" "_" "_") ;6
+		      ("_" "_" "_" "_" "_" "_" "P" "_" "_") ;7
+		      ("_" "_" "_" "_" "_" "_" "_" "_" "_")));8
+	:drops-ally
+	(list "P" "R")
+	:drops-enemy
+	(list "-P" "-G")))
 
 
 ;;;----------------------------------------------------------------------------------------------
@@ -71,14 +76,36 @@
   "Return the piece on the square"
   (getf (getf board row) column))
 
-(defun get-all-ally (board)
+(defun get-all-ally (board drops-ally)
   "Return every possible moves + drops for ally pieces with the notation ('Piece' row column)"
-  (let* ((result))
+  (let* ((result (list :moves '() :drops '()))
+	 (empty-pl)
+	 (empty-n)
+	 (empty))
     (dotimes (row 9 result)
       (dotimes (column 9 result)
 	(let ((square (aref board row column)))
-	     (when (and (string-not-equal square  "_") (string-not-equal (subseq square 0 1) "-"))
-	       (push (list square (get-available-move-ally square row column board)) result)))))))
+	  (when (and (string-not-equal square  "_") (string-not-equal (subseq square 0 1) "-"))
+	    (push (list square (get-available-move-ally square row column board)) (getf result :moves)))
+	  (when (string-equal square "_")
+	    (when (> row 1)
+	      (progn
+		(push (list row column) empty-pl)
+		(push (list row column) empty-n)
+		(push (list row column) empty)))
+	    (when (= row 1)
+	      (progn
+		(push (list row column) empty-pl)
+		(push (list row column) empty)))
+	    (when (= row 0)
+	      (push (list row column) empty))))))
+    (dolist (piece drops-ally)
+      (cond ((or (string-equal piece "L") (string-equal piece "P"))
+	     (push (list piece empty-pl) (getf result :drops)))
+	     ((string-equal piece "N")
+	     (push (list piece empty-n) (getf result :drops)))
+	     (t (push (list piece empty) (getf result :drops)))))
+    (return-from get-all-ally result)))
 
 (defun get-available-move-ally (piece row column board)
   (cond ((equal piece "P") (get-move-pawn-ally row column board))
@@ -93,14 +120,36 @@
 	((equal piece "+B") (get-move-horse-ally row column board))
 	((or (equal piece "+S") (equal piece "+N") (equal piece "+L") (equal piece "+P")) (get-move-gold-ally row column board))))
 
-(defun get-all-enemy (board)
-  "Return every possible moves + drops for enemy pieces with the notation ('Piece' row column)"
-  (let* ((result))
+(defun get-all-enemy (board drops-enemy)
+  "Return every possible moves + drops for ally pieces with the notation ('Piece' row column)"
+  (let* ((result (list :moves '() :drops '()))
+	 (empty-pl)
+	 (empty-n)
+	 (empty))
     (dotimes (row 9 result)
       (dotimes (column 9 result)
 	(let ((square (aref board row column)))
-	     (when (and (string-not-equal square  "_") (equal (subseq square 0 1) "-"))
-	       (push (list square (get-available-move-enemy square row column board)) result)))))))
+	  (when (and (string-not-equal square  "_") (equal (subseq square 0 1) "-"))
+	    (push (list square (get-available-move-enemy square row column board)) (getf result :moves)))
+	  (when (string-equal square "_")
+	    (when (< row 7)
+	      (progn
+		(push (list row column) empty-pl)
+		(push (list row column) empty-n)
+		(push (list row column) empty)))
+	    (when (= row 7)
+	      (progn
+		(push (list row column) empty-pl)
+		(push (list row column) empty)))
+	    (when (= row 8)
+	      (push (list row column) empty))))))
+    (dolist (piece drops-enemy)
+      (cond ((or (string-equal piece "-L") (string-equal piece "-P"))
+	     (push (list piece empty-pl) (getf result :drops)))
+	     ((string-equal piece "-N")
+	     (push (list piece empty-n) (getf result :drops)))
+	     (t (push (list piece empty) (getf result :drops)))))
+    (return-from get-all-enemy result)))
 
 (defun get-available-move-enemy (piece row column board)
   (cond ((equal piece "-P") (get-move-pawn-enemy row column board))
@@ -147,6 +196,10 @@
     (dotimes (i (length rows) result)
       (cond ((and (<= (nth i rows) 8) (>= (nth i rows) 0) (<= (nth i columns) 8) (>= (nth i columns) 0))
 	     (push (list (nth i rows) (nth i columns)) result)))))))
+
+(defun contains (item sequence)
+  (if (member item sequence) T NIL))
+	  
 
 ;Function taken from the library Alexandria to copy arrays
 (defun copy-array (array &key

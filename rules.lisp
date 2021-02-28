@@ -40,35 +40,50 @@
 ;;;----------------------------------------------------------------------------------------------
 ;;; Win functions
 
-(defun mate (board)
-  (print board)
-  (let ((moves (get-all-ally board))
+(defun mate (board drops-ally)
+  (let ((all (get-all-ally board drops-ally))
 	(jewel (find-piece "-J" board)))
-    (dolist (pieces moves)
+    (dolist (pieces (getf all :moves))
       (dolist (location (second pieces))
-	(if (equal location jewel) (return-from mate t))))))
+	(if (equal location jewel) (return-from mate t))))
+    (dolist (drop-p (getf all :moves))
+      (dolist (drop-location (second drop-p))
+	(if (equal drop-location jewel) (return-from mate t))))))
 
-(defun checkmate (board)
+(defun checkmate (board drops-ally drops-enemy)
   "Return t if the jewel on the board is checkmate"
   ;; trouver jewel verif s'il est mat verif pour chaque move piece adverse qu'il est tjrs mat
-  (when (mate board)
-    (let ((moves (get-all-enemy board)))
+  (when (mate board drops-ally)
+    (let* ((all (get-all-enemy board drops-enemy))
+	   (moves (getf all :moves))
+	   (drops (getf all :drops)))
       ;(print moves)
       (dolist (pieces moves)	
 	(dolist (location (second pieces))
 	  ;(print pieces)
 	  ;(print location)
-	  (when (not (mate (move-piece board (first pieces) location)))
+	  (when (not (mate (move-piece board (first pieces) location (getf pieces :initial)) drops-ally)))
+	    (return-from checkmate nil)))
+      (dolist (item drops)	
+	(dolist (place (second item))
+	  ;(print pieces)
+	  ;(print location)
+	  (when (not (mate (drop-piece board (first item) place) drops-ally))
 	    (return-from checkmate nil))))
       (return-from checkmate t))))
 
-(defun move-piece (board piece location)
+(defun move-piece (board piece location initial)
   "Return a copy from the board with the piece moved to the location"
-  (let ((result (copy-array board))
-	(initial (find-piece piece board)))
+  (let ((result (copy-array board)))
     (setf (aref result (first location) (second location)) piece)
     (setf (aref result (first initial) (second initial)) "_")
     (return-from move-piece result)))
+
+(defun drop-piece (board piece location)
+  "Return a copy from the board with the piece dropped to the location"
+  (let ((result (copy-array board)))
+    (setf (aref result (first location) (second location)) piece)
+    (return-from drop-piece result)))
     
 	
     
@@ -86,7 +101,7 @@
       (dotimes (column 9 result)
 	(let ((square (aref board row column)))
 	  (when (and (string-not-equal square  "_") (string-not-equal (subseq square 0 1) "-"))
-	    (push (list square (get-available-move-ally square row column board)) (getf result :moves)))
+	    (push (list square (get-available-move-ally square row column board) :initial (list row column)) (getf result :moves)))
 	  (when (string-equal square "_")
 	    (when (> row 1)
 	      (progn
@@ -130,7 +145,7 @@
       (dotimes (column 9 result)
 	(let ((square (aref board row column)))
 	  (when (and (string-not-equal square  "_") (equal (subseq square 0 1) "-"))
-	    (push (list square (get-available-move-enemy square row column board)) (getf result :moves)))
+	    (push (list square (get-available-move-enemy square row column board) :initial (list row column)) (getf result :moves)))
 	  (when (string-equal square "_")
 	    (when (< row 7)
 	      (progn
