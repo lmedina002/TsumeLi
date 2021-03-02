@@ -46,9 +46,10 @@
     (dolist (pieces (getf all :moves))
       (dolist (location (second pieces))
 	(if (equal location jewel) (return-from mate t))))
-    (dolist (drop-p (getf all :moves))
+    (dolist (drop-p (getf all :drops))
       (dolist (drop-location (second drop-p))
-	(if (equal drop-location jewel) (return-from mate t))))))
+	(dolist (drop-moves (get-available-move-ally (first drop-p) (first drop-location) (second drop-location) (drop-piece board (first drop-p) drop-location)))
+	  (if (equal drop-moves jewel) (return-from mate t)))))))
 
 (defun checkmate (board drops-ally drops-enemy)
   "Return t if the jewel on the board is checkmate"
@@ -62,8 +63,8 @@
 	(dolist (location (second pieces))
 	  ;(print pieces)
 	  ;(print location)
-	  (when (not (mate (move-piece board (first pieces) location (getf pieces :initial)) drops-ally)))
-	    (return-from checkmate nil)))
+	  (when (not (mate (move-piece board (first pieces) location (getf pieces :initial)) drops-ally))
+	    (return-from checkmate nil))))
       (dolist (item drops)	
 	(dolist (place (second item))
 	  ;(print pieces)
@@ -79,6 +80,13 @@
     (setf (aref result (first initial) (second initial)) "_")
     (return-from move-piece result)))
 
+(defun move-promote-piece (board piece location initial)
+  "Return a copy from the board with the piece moved to the location and promoted"
+  (let ((result (copy-array board)))
+    (setf (aref result (first location) (second location)) (promote piece))
+    (setf (aref result (first initial) (second initial)) "_")
+    (return-from move-promote-piece result)))
+
 (defun drop-piece (board piece location)
   "Return a copy from the board with the piece dropped to the location"
   (let ((result (copy-array board)))
@@ -92,7 +100,7 @@
   (getf (getf board row) column))
 
 (defun get-all-ally (board drops-ally)
-  "Return every possible moves + drops for ally pieces with the notation ('Piece' row column)"
+  "Return every possible moves + drops for ally pieces with the notation (:moves (('Piece' '((row column) ...) :initial (row colummn)) :drops ('Piece' '((row column) ...))"
   (let* ((result (list :moves '() :drops '()))
 	 (empty-pl)
 	 (empty-n)
@@ -243,7 +251,7 @@ perform better."
 (defun get-move-pawn-ally (row column board)
   (cond ((and (> row 0) (not (is-ally (- row 1) column board))) 
 	 (list (list (- row 1) column))) ;double list for coherence with others get-move
-	(t (promote "P"))))
+	(t (get-move-gold-ally row column board))))
 
 (defun get-move-lance-ally (row column board)
   (cond ((> row 0)
@@ -255,7 +263,7 @@ perform better."
 	       ((and (is-piece item column board) (is-ally item column board))
 		(setq avail-row (remove (+ item 1) avail-row :test #'>)))))
 	   (tuple-coord avail-row (mapcar (lambda (x) (setq x column)) avail-row))))
-	(t (promote "L"))))
+	(t (get-move-gold-ally row column board))))
 
 (defun get-move-knight-ally (row column board)
   (cond ((and (> row 1) (< column 8) (> column 0))
@@ -541,10 +549,10 @@ perform better."
 
 (defun get-move-king-enemy (row column board)
   (let* ((result)) ;Moves from a gold general with 2 additionnal moves
-    (when (and (<= (+ row 1) 8) (>= (- column 1) 0) (not (is-enemy (+ row 1) (- column 1) board)))
-      (push (list (+ row 1) (- column 1)) result))      
-    (when (and (<= (+ row 1) 8) (<= (+ column 1) 8) (not (is-enemy (+ row 1) (+ column 1) board)))
-      (push (list (+ row 1) (+ column 1)) result))
+    (when (and (>= (- row 1) 0) (>= (- column 1) 0) (not (is-enemy (+ row 1) (- column 1) board)))
+      (push (list (- row 1) (- column 1)) result))      
+    (when (and (>= (- row 1) 0) (<= (+ column 1) 8) (not (is-enemy (+ row 1) (+ column 1) board)))
+      (push (list (- row 1) (+ column 1)) result))
     (append result (get-move-gold-enemy row column board))))
 
 (defun get-move-dragon-enemy (row column board)
