@@ -45,11 +45,8 @@
 	(jewel (find-piece "-J" board)))
     (dolist (pieces (getf all :moves))
       (dolist (location (second pieces))
-	(if (equal location jewel) (return-from mate t))))
-    (dolist (drop-p (getf all :drops))
-      (dolist (drop-location (second drop-p))
-	(dolist (drop-moves (get-available-move-ally (first drop-p) (first drop-location) (second drop-location) (drop-piece board (first drop-p) drop-location)))
-	  (if (equal drop-moves jewel) (return-from mate t)))))))
+	(if (equal location jewel) (return-from mate t))))    
+    (return-from mate nil)))
 
 (defun checkmate (board drops-ally drops-enemy)
   "Return t if the jewel on the board is checkmate"
@@ -69,7 +66,7 @@
 	(dolist (place (second item))
 	  ;(print pieces)
 	  ;(print location)
-	  (when (not (mate (drop-piece board (first item) place) drops-ally))
+	  (when (not (mate (drop-piece board (first item) place) (remove (first item) drops-enemy :test #'equal)))
 	    (return-from checkmate nil))))
       (return-from checkmate t))))
 

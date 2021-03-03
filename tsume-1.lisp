@@ -1,6 +1,7 @@
 ;;;; Programm to solve tsume in 1 turn
-
-(load  "e:/Mes docs/Documents/Mes documents/Cours/ENSC/2A/PII/TsumeLi/rules.lisp") ;Desktop path
+(require "asdf")
+(asdf:require-system :tsumeli)
+;(load  "e:/Mes docs/Documents/Mes documents/Cours/ENSC/2A/PII/TsumeLi/rules.lisp") ;Desktop path
 
 ;; board -> pour chaque move -> test checkmate
 
@@ -9,7 +10,7 @@
 	  :board (make-array '(9 9)
 		    :initial-contents ;Tsume 232, soluce drop (S 1 3)
 		      ; 0   1   2   3   4   5   6   7   8
-		    '(("_" "_" "_" "_" "-J" "_" "_" "_" "-J") ;0
+		    '(("_" "_" "_" "_" "-J" "_" "_" "_" "_") ;0
 		      ("_" "_" "_" "_" "_" "-G" "S" "_" "_") ;1
 		      ("_" "_" "_" "G" "_" "_" "_" "_" "_") ;2
 		      ("_" "_" "_" "_" "_" "_" "_" "_" "_") ;3
@@ -31,5 +32,5 @@
 	  (format t "~%Piece ~A in ~A move to ~A" (first piece-on) (getf piece-on :initial) movement))))
   (dolist (piece-off (getf all :drops))
     (dolist (drop (second piece-off))
-      (if (checkmate (drop-piece (getf board :board) (first piece-off) drop) (getf board :drops-ally) (getf board :drops-enemy))
+      (if (checkmate (drop-piece (getf board :board) (first piece-off) drop) (remove (first piece-off) (getf board :drops-ally) :test #'equal) (getf board :drops-enemy))
 	  (format t "~%Drop piece ~A to ~A" (first piece-off) drop)))))
