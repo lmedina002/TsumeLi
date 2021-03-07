@@ -6,6 +6,7 @@
   :description "Solving shogi tsume"
   :long-description "Lisp implementation of shogi tsume solving"
   :components ((:file "rules")
+	       (:file "interactions")
                (:file "tsume-1"
                       :depends-on ("rules"))
                (:file "rules-test"
