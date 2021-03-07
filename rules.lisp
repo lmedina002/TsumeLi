@@ -55,7 +55,6 @@
     (let* ((all (get-all-enemy board drops-enemy))
 	   (moves (getf all :moves))
 	   (drops (getf all :drops)))
-      ;(print moves)
       (dolist (pieces moves)	
 	(dolist (location (second pieces))
 	  ;(print pieces)
@@ -105,7 +104,9 @@
     (dotimes (row 9 result)
       (dotimes (column 9 result)
 	(let ((square (aref board row column)))
-	  (when (and (string-not-equal square  "_") (string-not-equal (subseq square 0 1) "-"))
+	  (when (and (string-not-equal square  "_")
+		     (string-not-equal (subseq square 0 1) "-")
+		     (not (equal (second (get-available-move-ally square row column board)) nil)))
 	    (push (list square (get-available-move-ally square row column board) :initial (list row column)) (getf result :moves)))
 	  (when (string-equal square "_")
 	    (when (> row 1)
@@ -149,7 +150,9 @@
     (dotimes (row 9 result)
       (dotimes (column 9 result)
 	(let ((square (aref board row column)))
-	  (when (and (string-not-equal square  "_") (equal (subseq square 0 1) "-"))
+	  (when (and (string-not-equal square  "_")
+		     (equal (subseq square 0 1) "-")
+		     (not (equal (second (get-available-move-enemy square row column board)) nil)))
 	    (push (list square (get-available-move-enemy square row column board) :initial (list row column)) (getf result :moves)))
 	  (when (string-equal square "_")
 	    (when (< row 7)
@@ -192,6 +195,7 @@
 
 ;;;----------------------------------------------------------------------------------------------
 ;;; Utility functions
+
 (defun is-piece (row column board)
   (string-not-equal (aref board row column) "_"))
 
@@ -248,7 +252,7 @@ perform better."
 (defun get-move-pawn-ally (row column board)
   (cond ((and (> row 0) (not (is-ally (- row 1) column board))) 
 	 (list (list (- row 1) column))) ;double list for coherence with others get-move
-	(t (get-move-gold-ally row column board))))
+	(t nil)))
 
 (defun get-move-lance-ally (row column board)
   (cond ((> row 0)
@@ -260,7 +264,7 @@ perform better."
 	       ((and (is-piece item column board) (is-ally item column board))
 		(setq avail-row (remove (+ item 1) avail-row :test #'>)))))
 	   (tuple-coord avail-row (mapcar (lambda (x) (setq x column)) avail-row))))
-	(t (get-move-gold-ally row column board))))
+	(t nil)))
 
 (defun get-move-knight-ally (row column board)
   (cond ((and (> row 1) (< column 8) (> column 0))
@@ -416,7 +420,7 @@ perform better."
 (defun get-move-pawn-enemy (row column board)
   (cond ((and (< row 8) (not (is-enemy (+ row 1) column board)))
 	 (list (list (+ row 1) column))) ;double list for coherence with others get-move
-	(t (promote "-P"))))
+	(t nil)))
 
 (defun get-move-lance-enemy (row column board)
   (cond ((< row 8)
@@ -428,7 +432,7 @@ perform better."
 	       ((and (is-piece item column board) (is-enemy item column board))
 		(setq avail-row (remove (- item 1) avail-row :test #'<)))))		
 	   (tuple-coord avail-row (mapcar (lambda (x) (setq x column)) avail-row))))
-	(t (promote "-L"))))
+	(t nil)))
 
 (defun get-move-knight-enemy (row column board)
   (cond ((and (< row 7) (< column 8) (> column 0))
@@ -546,9 +550,9 @@ perform better."
 
 (defun get-move-king-enemy (row column board)
   (let* ((result)) ;Moves from a gold general with 2 additionnal moves
-    (when (and (>= (- row 1) 0) (>= (- column 1) 0) (not (is-enemy (+ row 1) (- column 1) board)))
+    (when (and (>= (- row 1) 0) (>= (- column 1) 0) (not (is-enemy (- row 1) (- column 1) board)))
       (push (list (- row 1) (- column 1)) result))      
-    (when (and (>= (- row 1) 0) (<= (+ column 1) 8) (not (is-enemy (+ row 1) (+ column 1) board)))
+    (when (and (>= (- row 1) 0) (<= (+ column 1) 8) (not (is-enemy (- row 1) (+ column 1) board)))
       (push (list (- row 1) (+ column 1)) result))
     (append result (get-move-gold-enemy row column board))))
 
