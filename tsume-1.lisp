@@ -1,9 +1,4 @@
 ;;;; Programm to solve tsume in 1 turn
-;(require "asdf")
-;(asdf:require-system :tsumeli)
-(load  "e:/Mes docs/Documents/Mes documents/Cours/ENSC/2A/PII/TsumeLi/rules.lisp") ;Desktop path
-(load  "e:/Mes docs/Documents/Mes documents/Cours/ENSC/2A/PII/TsumeLi/interactions.lisp")
-;; board -> pour chaque move -> test checkmate
 
 (let* ((board
 	 (list

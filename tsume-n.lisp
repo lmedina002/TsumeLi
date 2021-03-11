@@ -1,6 +1,4 @@
 ;;;; Program to solve tsume in n-turn
-(load  "e:/Mes docs/Documents/Mes documents/Cours/ENSC/2A/PII/TsumeLi/rules.lisp") ;Desktop path
-(load  "e:/Mes docs/Documents/Mes documents/Cours/ENSC/2A/PII/TsumeLi/interactions.lisp")
 
 ;;Evaluation of a board configuration
 (defun value-enemy-piece (piece)

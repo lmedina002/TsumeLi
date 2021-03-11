@@ -1,8 +1,6 @@
 ;;;; Run tests for the functions in the file rules.lisp
-;(load "~/TsumeLi/rules.lisp")  ;Laptop path
-(load  "e:/Mes docs/Documents/Mes documents/Cours/ENSC/2A/PII/TsumeLi/rules.lisp") ;Desktop path
 
-(format t "~%------------- Début ---------------~%~%Test des get-move-...-ally:~%")
+(format t "~%------------- Debut ---------------~%~%Test des get-move-...-ally:~%")
 
 (let ((board (make-array '(9 9)
 	 :initial-contents

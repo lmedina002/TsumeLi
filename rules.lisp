@@ -3,6 +3,7 @@
 ;;;----------------------------------------------------------------------------------------------
 ;;; Board related functions
 
+
 (defun init-empty-board ()
   "Create an empty board indexed by letter rows and columns"
   (list
