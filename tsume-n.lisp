@@ -67,5 +67,61 @@
     (dolist (piece drops-ally)
       (setq result (+ result (value-ally-piece piece))))
     (return-from evaluation-ally result)))
-      
+
+;; Main
+(defun main (n full-board)
+  (let ((drops-ally (getf full-board :drops-ally))
+	(drops-enemy (getf full-board :drops-enemy))
+	(board (getf full-board :board)))
+    (dotimes (k n)
+      (format-board (list :board board :drops-ally drops-ally :drops-enemy drops-enemy))
+      (cond ((evenp k) ;Ally turn
+	     (let ((all (get-all-ally board drops-ally))
+		   (min-eval)
+		   (play))
+	       (dolist (piece-on (getf all :moves))
+		 (dolist (movement (second piece-on))
+		   (when (< (evaluation-enemy (move-piece board (first piece-on) movement (getf piece-on :initial)) drops-enemy drops-ally) min-eval) ;Pb ajout pieces prises
+		     (progn
+		       (setq min-eval (evaluation-enemy (move-piece board (first piece-on) movement (getf piece-on :initial)) drops-enemy drops-ally))
+		       (setq play (list :piece (first piece-on) :movement movement :initial (getf piece-on :initial) :type "move"))))))
+	       (dolist (piece-off (getf all :drops))
+		 (dolist (drop (second piece-off))
+		   (when (< (evaluation-enemy (drop-piece board (first piece-off) drop) drops-enemy (remove (first piece-off) drops-ally :test #'equal)) min-eval)
+		     (progn
+		       (setq min-eval (evaluation-enemy (drop-piece board (first piece-off) drop) drops-enemy (remove (first piece-off) drops-ally :test #'equal)))
+		       (setq play (list :piece (first piece-off) :movement drop :type "drop"))))))
+	       (if (string-equal (getf play :type) "move") ;on joue le min
+		   (progn
+		     (if (string-equal (subseq (aref board (first (getf play :movement)) (second (getf play :movement))) 0 1) "-")
+			 (push drops-ally (subseq (aref board (first (getf play :movement)) (second (getf play :movement))) 1)))
+		     (setq board (move-piece board (getf play :piece) (getf play :movement) (getf play :initial)))) ;move-piece		     		     
+		   (progn
+		     (setq board (drop-piece board (getf play :piece) (getf play :location)))
+		     (setq drops-ally (remove (getf play :piece) drops-ally :test #'equal)))))) ;drop-piece
+	    ((oddp k) ;Enemy turn
+	     (let ((all (get-all-enemy board drops-enemy))
+		   (max-eval)
+		   (play))
+	       (dolist (piece-on (getf all :moves))
+		 (dolist (movement (second piece-on))
+		   (when (> (evaluation-enemy (move-piece board (first piece-on) movement (getf piece-on :initial)) drops-enemy drops-ally) max-eval) ;Pb ajout pieces prises
+		     (progn
+		       (setq max-eval (evaluation-enemy (move-piece board (first piece-on) movement (getf piece-on :initial)) drops-enemy drops-ally))
+		       (setq play (list :piece (first piece-on) :movement movement :initial (getf piece-on :initial) :type "move"))))))
+	       (dolist (piece-off (getf all :drops))
+		 (dolist (drop (second piece-off))
+		   (when (> (evaluation-enemy (drop-piece board (first piece-off) drop) (remove (first piece-off) drops-enemy :test #'equal) drops-ally) max-eval)
+		     (progn
+		       (setq max-eval (evaluation-enemy (drop-piece board (first piece-off) drop) (remove (first piece-off) drops-enemy :test #'equal) drops-ally))
+		       (setq play (list :piece (first piece-off) :movement drop :type "drop"))))))
+	       (if (string-equal (getf play :type) "move") ;on joue le max
+		   (progn
+		     (if (string-not-equal (aref board (first (getf play :movement)) (second (getf play :movement))) "_")
+			 (push drops-enemy (concatenate 'string "-" (aref board (first (getf play :movement)) (second (getf play :movement))))))
+		     (setq board (move-piece board (getf play :piece) (getf play :movement) (getf play :initial)))) ;move-piece		     		     
+		   (progn
+		     (setq board (drop-piece board (getf play :piece) (getf play :location)))
+		     (setq drops-enemy (remove (getf play :piece) drops-enemy :test #'equal)))))))))) ;drop-piece
+	     
 		  
