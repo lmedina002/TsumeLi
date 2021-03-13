@@ -118,10 +118,75 @@
 	       (if (string-equal (getf play :type) "move") ;on joue le max
 		   (progn
 		     (if (string-not-equal (aref board (first (getf play :movement)) (second (getf play :movement))) "_")
-			 (push drops-enemy (concatenate 'string "-" (aref board (first (getf play :movement)) (second (getf play :movement))))))
+			 (push (concatenate 'string "-" (aref board (first (getf play :movement)) (second (getf play :movement)))) drops-enemy))
 		     (setq board (move-piece board (getf play :piece) (getf play :movement) (getf play :initial)))) ;move-piece		     		     
 		   (progn
 		     (setq board (drop-piece board (getf play :piece) (getf play :location)))
 		     (setq drops-enemy (remove (getf play :piece) drops-enemy :test #'equal)))))))))) ;drop-piece
-	     
+
+(defun minimax (n full-board)
+  (let ((drops-ally (getf full-board :drops-ally))
+	(drops-enemy (getf full-board :drops-enemy))
+	(board (getf full-board :board))
+	(result))    
+    (cond ((= n 0) ;Enemy final turn end of recursion evaluation of the board
+	   (let ((max-eval))
+	     (setq max-eval (evaluation-enemy board drops-enemy drops-ally))
+	     (setq result (list :score max-eval :board board :drops-ally drops-ally :drops-enemy drops-enemy))
+	     (return-from minimax result)))
+	  ((oddp n)
+	   (let ((all (get-all-ally board drops-ally))
+		   (min-eval))
+	       (dolist (piece-on (getf all :moves))
+		 (dolist (movement (second piece-on))
+		   (if (string-equal (subseq (aref board (first movement) (second movement)) 0 1) "-")
+		       (push (minimax
+			      (- n 1)
+			      (list :board (move-piece board (first piece-on) movement (getf piece-on :initial))		    
+				    :drops-enemy drops-enemy
+				    :drops-ally (push drops-ally (subseq (aref board (first movement) (second movement)) 1))))
+			     min-eval)
+		       (push (minimax
+			      (- n 1)
+			      (list :board (move-piece board (first piece-on) movement (getf piece-on :initial))		    
+				    :drops-enemy drops-enemy
+				    :drops-ally drops-ally))
+			     min-eval))))
+	       (dolist (piece-off (getf all :drops))
+		 (dolist (drop (second piece-off))
+		   (push (minimax
+			  (- n 1)
+			  (list :board (drop-piece board (first piece-off) drop)
+				:drops-enemy drops-enemy
+				:drops-ally (remove (first piece-off) drops-ally :test #'equal)))
+			 min-eval))) 
+	       (return-from minimax (get-element min-eval #'< :score))))
+	  ((evenp n)
+	   (let ((all (get-all-enemy board drops-ally))
+		   (max-eval))
+	       (dolist (piece-on (getf all :moves))
+		 (dolist (movement (second piece-on))
+		   (if (string-not-equal (aref board (first movement) (second movement)) "_")
+		       (push (minimax
+			      (- n 1)
+			      (list :board (move-piece board (first piece-on) movement (getf piece-on :initial))		    
+				    :drops-enemy (push (concatenate 'string "-" (aref board (first movement) (second movement))) drops-enemy)
+				    :drops-ally drops-ally))
+			     max-eval)
+		       (push (minimax
+			      (- n 1)
+			      (list :board (move-piece board (first piece-on) movement (getf piece-on :initial))		    
+				    :drops-enemy drops-enemy
+				    :drops-ally drops-ally))
+			     max-eval))))
+	       (dolist (piece-off (getf all :drops))
+		 (dolist (drop (second piece-off))
+		   (push (minimax
+			  (- n 1)
+			  (list :board (drop-piece board (first piece-off) drop)
+				:drops-enemy (remove (first piece-off) drops-enemy :test #'equal)
+				:drops-ally drops-ally))
+			 max-eval))) 
+	       (return-from minimax (get-element max-eval #'> :score)))))))
+					
 		  

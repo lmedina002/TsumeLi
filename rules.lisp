@@ -224,6 +224,16 @@
 
 (defun contains (item sequence)
   (if (member item sequence) T NIL))
+
+(defun get-element (list predicate key)
+              (when list
+                (let* ((m0 (first list))
+                       (m1 (getf m0 key)))
+                  (mapc (lambda (e0 &aux (e1 (getf e0 key)))
+                          (when (funcall predicate e1 m1)
+                            (psetf m0 e0 m1 e1)))
+                        list)
+                  m0)))
 	  
 
 ;Function taken from the library Alexandria to copy arrays
