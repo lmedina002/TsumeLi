@@ -23,8 +23,10 @@
 (defun evaluation-enemy (board drops-enemy drops-ally)
   "Attribute a value to a board configuration"
   (let ((result 0))
+    (when (checkmate board drops-ally drops-enemy)
+      (return-from evaluation-enemy -100))
     (when (mate board drops-ally)
-      (return-from evaluation-enemy result))
+      (return-from evaluation-enemy 0))
     (dotimes (row 9 result)
       (dotimes (column 9 result)
 	(let ((square (aref board row column)))
@@ -128,8 +130,8 @@
   (let ((drops-ally (getf full-board :drops-ally))
 	(drops-enemy (getf full-board :drops-enemy))
 	(board (getf full-board :board))
-	(result))    
-    (cond ((= n 0) ;Enemy final turn end of recursion evaluation of the board
+	(result))
+    (cond ((= n 1) ;Ally final turn end of recursion evaluation of the board
 	   (let ((max-eval))
 	     (setq max-eval (evaluation-enemy board drops-enemy drops-ally))
 	     (setq result (list :score max-eval :board board :drops-ally drops-ally :drops-enemy drops-enemy))
@@ -144,7 +146,7 @@
 			      (- n 1)
 			      (list :board (move-piece board (first piece-on) movement (getf piece-on :initial))		    
 				    :drops-enemy drops-enemy
-				    :drops-ally (push drops-ally (subseq (aref board (first movement) (second movement)) 1))))
+				    :drops-ally (push (subseq (aref board (first movement) (second movement)) 1) drops-ally)))
 			     min-eval)
 		       (push (minimax
 			      (- n 1)
@@ -159,8 +161,8 @@
 			  (list :board (drop-piece board (first piece-off) drop)
 				:drops-enemy drops-enemy
 				:drops-ally (remove (first piece-off) drops-ally :test #'equal)))
-			 min-eval))) 
-	       (return-from minimax (get-element min-eval #'< :score))))
+			 min-eval)))
+	     (return-from minimax (get-element min-eval #'< :score))))
 	  ((evenp n)
 	   (let ((all (get-all-enemy board drops-ally))
 		   (max-eval))
@@ -186,7 +188,9 @@
 			  (list :board (drop-piece board (first piece-off) drop)
 				:drops-enemy (remove (first piece-off) drops-enemy :test #'equal)
 				:drops-ally drops-ally))
-			 max-eval))) 
-	       (return-from minimax (get-element max-eval #'> :score)))))))
+			 max-eval)))
+	     (return-from minimax (get-element max-eval #'> :score)))))
+					;Todo: affichage terminal des états choisis
+    ))
 					
 		  
