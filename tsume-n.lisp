@@ -131,7 +131,7 @@
 	(drops-enemy (getf full-board :drops-enemy))
 	(board (getf full-board :board))
 	(result))
-    (cond ((= n 1) ;Ally final turn end of recursion evaluation of the board
+    (cond ((= n 0) ;Ally final turn end of recursion evaluation of the board
 	   (let ((max-eval))
 	     (setq max-eval (evaluation-enemy board drops-enemy drops-ally))
 	     (setq result (list :score max-eval :board board :drops-ally drops-ally :drops-enemy drops-enemy))
@@ -162,6 +162,7 @@
 				:drops-enemy drops-enemy
 				:drops-ally (remove (first piece-off) drops-ally :test #'equal)))
 			 min-eval)))
+	     (print (get-element min-eval #'< :score))
 	     (return-from minimax (get-element min-eval #'< :score))))
 	  ((evenp n)
 	   (let ((all (get-all-enemy board drops-ally))

@@ -14,7 +14,7 @@
 	   ("_" "_" "_" "_" "_" "_" "K" "_" "-P") ;6
 	   ("R" "_" "_" "_" "N" "_" "P" "_" "G") ;7
 	   ("-P" "_" "_" "+R" "_" "_" "_" "_" "P")))));8
-  (cond ((and (equal (get-move-pawn-ally 4 6 board) '((3 6))) (string-equal (get-move-pawn-ally 7 6 board) "+P"))
+  (cond ((and (equal (get-move-pawn-ally 4 6 board) '((3 6))) (equal (get-move-pawn-ally 7 6 board) (list)))
 	 (format t "~%get-move-pawn-ally: OK"))
 	(t (format t "~%get-move-pawn-ally: NIL")))
   (cond ((and (equal (set-difference (get-move-lance-ally 5 2 board)
@@ -23,7 +23,7 @@
 	      (equal (set-difference (get-move-lance-ally 5 3 board)
 				     (list '(4 3) '(3 3)) :test #'equal)
 		     NIL)
-	      (string-equal (get-move-lance-ally 0 0 board) "+L"))
+	      (equal (get-move-lance-ally 0 0 board) (list)))
 	 (format t "~%get-move-lance-ally: OK"))
 	(t (format t "~%get-move-lance-ally: NIL")))
   (cond ((and (equal (get-move-knight-ally 7 4 board)
@@ -81,7 +81,7 @@
 	   ("_" "-L" "_" "_" "_" "_" "-K" "_" "-+R") ;6
 	   ("_" "P" "_" "-N" "_" "_" "-P" "_" "_") ;7
 	   ("_" "_" "_" "_" "_" "-P" "_" "_" "-L")))));8
-  (cond ((and (equal (get-move-pawn-enemy 2 3 board) '((3 3))) (string-equal (get-move-pawn-enemy 8 5 board) "-+P"))
+  (cond ((and (equal (get-move-pawn-enemy 2 3 board) '((3 3))) (equal (get-move-pawn-enemy 8 5 board) (list)))
 	 (format t "~%get-move-pawn-enemy: OK"))
 	(t (format t "~%get-move-pawn-enemy: NIL")))
   (cond ((and (equal (set-difference (get-move-lance-enemy 3 5 board)
@@ -90,7 +90,7 @@
 	      (equal (set-difference (get-move-lance-enemy 6 1 board)
 				     (list '(7 1)) :test #'equal)
 		     NIL)
-	      (string-equal (get-move-lance-enemy 8 8 board) "-+L"))
+	      (equal (get-move-lance-enemy 8 8 board) (list)))
 	 (format t "~%get-move-lance-enemy: OK"))
 	(t (format t "~%get-move-lance-enemy: NIL")))
   (cond ((and (equal (get-move-knight-enemy 5 4 board)
