@@ -131,7 +131,7 @@
 	(drops-enemy (getf full-board :drops-enemy))
 	(board (getf full-board :board))
 	(result))
-    (cond ((= n 0) ;Ally final turn end of recursion evaluation of the board
+    (cond ((or (= n 0)(checkmate board drops-ally drops-enemy)) ;Ally final turn end of recursion evaluation of the board
 	   (let ((max-eval))
 	     (setq max-eval (evaluation-enemy board drops-enemy drops-ally))
 	     (setq result (list :score max-eval :board board :drops-ally drops-ally :drops-enemy drops-enemy))
@@ -142,12 +142,13 @@
 	       (dolist (piece-on (getf all :moves))
 		 (dolist (movement (second piece-on))
 		   (if (string-equal (subseq (aref board (first movement) (second movement)) 0 1) "-")
-		       (push (minimax
-			      (- n 1)
-			      (list :board (move-piece board (first piece-on) movement (getf piece-on :initial))		    
-				    :drops-enemy drops-enemy
-				    :drops-ally (push (subseq (aref board (first movement) (second movement)) 1) drops-ally)))
-			     min-eval)
+		       (let ((new-drops (copy-list drops-ally)))
+			 (push (minimax
+				(- n 1)
+				(list :board (move-piece board (first piece-on) movement (getf piece-on :initial))    
+				      :drops-enemy drops-enemy
+				      :drops-ally (push (subseq (aref board (first movement) (second movement)) 1) new-drops)))
+			     min-eval))
 		       (push (minimax
 			      (- n 1)
 			      (list :board (move-piece board (first piece-on) movement (getf piece-on :initial))		    
@@ -160,22 +161,22 @@
 			  (- n 1)
 			  (list :board (drop-piece board (first piece-off) drop)
 				:drops-enemy drops-enemy
-				:drops-ally (remove (first piece-off) drops-ally :test #'equal)))
+				:drops-ally (remove (first piece-off) (copy-list drops-ally) :test #'equal)))
 			 min-eval)))
-	     (print (get-element min-eval #'< :score))
 	     (return-from minimax (get-element min-eval #'< :score))))
 	  ((evenp n)
-	   (let ((all (get-all-enemy board drops-ally))
+	   (let ((all (get-all-enemy board drops-enemy))
 		   (max-eval))
 	       (dolist (piece-on (getf all :moves))
 		 (dolist (movement (second piece-on))
 		   (if (string-not-equal (aref board (first movement) (second movement)) "_")
-		       (push (minimax
-			      (- n 1)
-			      (list :board (move-piece board (first piece-on) movement (getf piece-on :initial))		    
-				    :drops-enemy (push (concatenate 'string "-" (aref board (first movement) (second movement))) drops-enemy)
-				    :drops-ally drops-ally))
-			     max-eval)
+		       (let ((new-drops (copy-list drops-enemy)))
+			 (push (minimax
+				(- n 1)
+				(list :board (move-piece board (first piece-on) movement (getf piece-on :initial))		    
+				      :drops-enemy (push (concatenate 'string "-" (subseq (aref board (first movement) (second movement)) 1)) new-drops)
+				      :drops-ally drops-ally))
+			     max-eval))
 		       (push (minimax
 			      (- n 1)
 			      (list :board (move-piece board (first piece-on) movement (getf piece-on :initial))		    
@@ -187,11 +188,168 @@
 		   (push (minimax
 			  (- n 1)
 			  (list :board (drop-piece board (first piece-off) drop)
-				:drops-enemy (remove (first piece-off) drops-enemy :test #'equal)
+				:drops-enemy (remove (first piece-off) (copy-list drops-enemy) :test #'equal)
 				:drops-ally drops-ally))
 			 max-eval)))
 	     (return-from minimax (get-element max-eval #'> :score)))))
 					;Todo: affichage terminal des états choisis
     ))
+
+;;---------------------Alpha-beta pruning ---------------------------------------------
+
+(defun alphabeta (n full-board alpha beta)
+  (let ((drops-ally (getf full-board :drops-ally))
+	(drops-enemy (getf full-board :drops-enemy))
+	(board (getf full-board :board))
+	(result))
+    (cond ((or (= n 0) (checkmate board drops-ally drops-enemy)) ;Ally final turn or checkmate (terminal node)
+	   (let ((max-eval))
+	     (setq max-eval (evaluation-enemy board drops-enemy drops-ally))
+	     (setq result (list :score max-eval :board board :drops-ally drops-ally :drops-enemy drops-enemy))
+	     (return-from alphabeta result)))
+	  ((oddp n)
+	   (let ((all (get-all-ally board drops-ally))
+		 (min-eval 200)
+		 (variation))
+	       (dolist (piece-on (getf all :moves))
+		 (dolist (movement (second piece-on))
+		   (if (string-equal (subseq (aref board (first movement) (second movement)) 0 1) "-")
+		       (let ((new-drops (copy-list drops-ally)))
+			 (if (> min-eval
+				(getf (alphabeta
+				       (- n 1)
+				       (list :board (move-piece board (first piece-on) movement (getf piece-on :initial))    
+					     :drops-enemy drops-enemy
+					     :drops-ally (push (subseq (aref board (first movement) (second movement)) 1) new-drops))
+				       alpha
+				       beta)
+				      :score))
+			     (progn
+			       (setq variation (alphabeta
+						(- n 1)
+						(list :board (move-piece board (first piece-on) movement (getf piece-on :initial))    
+						      :drops-enemy drops-enemy
+						      :drops-ally (push (subseq (aref board (first movement) (second movement)) 1) new-drops))
+						alpha
+						beta))
+			       
+			       (setq min-eval (getf variation :score))))))			     
+		   (if (> min-eval
+			  (getf (alphabeta
+				 (- n 1)
+				 (list :board (move-piece board (first piece-on) movement (getf piece-on :initial))    
+				       :drops-enemy drops-enemy
+				       :drops-ally drops-ally)
+				 alpha
+				 beta)
+				:score))
+		       (progn
+			 (setq variation (alphabeta
+					  (- n 1)
+					  (list :board (move-piece board (first piece-on) movement (getf piece-on :initial))    
+						:drops-enemy drops-enemy
+						:drops-ally drops-ally)
+					  alpha
+					  beta))			 
+			 (setq min-eval (getf variation :score))))
+		   (setq beta (min beta min-eval))
+		   (if (<= beta alpha)
+		       (return-from alphabeta variation))))
+	       (dolist (piece-off (getf all :drops))
+		 (dolist (drop (second piece-off))
+		   (if (> min-eval 
+			  (getf (alphabeta
+				 (- n 1)
+				 (list :board (drop-piece board (first piece-off) drop)
+				       :drops-enemy drops-enemy
+				       :drops-ally (remove (first piece-off) (copy-list drops-ally) :test #'equal))
+				 alpha
+				 beta)
+				:score))
+		       (progn
+			 (setq variation (alphabeta
+					  (- n 1)
+					  (list :board (drop-piece board (first piece-off) drop)
+						:drops-enemy drops-enemy
+						:drops-ally (remove (first piece-off) (copy-list drops-ally) :test #'equal))
+					  alpha
+					  beta))
+			 
+			 (setq min-eval (getf variation :score))))
+		   (setq beta (min beta min-eval))
+		   (if (<= beta alpha)
+		       (return-from alphabeta variation))))
+	     (return-from alphabeta variation)))
+	  ((evenp n)
+	   (let ((all (get-all-enemy board drops-enemy))
+		 (max-eval -200)
+		 (variation))
+	       (dolist (piece-on (getf all :moves))
+		 (dolist (movement (second piece-on))
+		   (if (string-not-equal (aref board (first movement) (second movement)) "_")
+		       (let ((new-drops (copy-list drops-enemy)))
+			 (if (< max-eval
+				(getf (alphabeta
+				       (- n 1)
+				       (list :board (move-piece board (first piece-on) movement (getf piece-on :initial))		    
+					     :drops-enemy (push (concatenate 'string "-" (subseq (aref board (first movement) (second movement)) 1)) new-drops)
+					     :drops-ally drops-ally)
+				       alpha
+				       beta)
+				      :score))
+			     (progn
+			       (setq variation (alphabeta
+						(- n 1)
+						(list :board (move-piece board (first piece-on) movement (getf piece-on :initial))		    
+						      :drops-enemy (push (concatenate 'string "-" (subseq (aref board (first movement) (second movement)) 1)) new-drops)
+						      :drops-ally drops-ally)
+						alpha
+						beta))
+			       (setq max-eval (getf variation :score)))))
+		       (if (< max-eval
+				(getf (alphabeta
+				       (- n 1)
+				       (list :board (move-piece board (first piece-on) movement (getf piece-on :initial))		    
+					     :drops-enemy drops-enemy
+					     :drops-ally drops-ally)
+				       alpha
+				       beta)
+				      :score))
+			     (progn
+			       (setq variation (alphabeta
+						(- n 1)
+						(list :board (move-piece board (first piece-on) movement (getf piece-on :initial))		    
+						      :drops-enemy drops-enemy
+						      :drops-ally drops-ally)
+						alpha
+						beta))
+			       (setq max-eval (getf variation :score)))))
+		   (setq alpha (max alpha max-eval))
+		   (if (>= alpha beta)
+		       (return-from alphabeta variation))))
+	       (dolist (piece-off (getf all :drops))
+		 (dolist (drop (second piece-off))
+		   (if (< max-eval
+			  (getf (alphabeta
+				 (- n 1)
+				 (list :board (drop-piece board (first piece-off) drop)
+				       :drops-enemy (remove (first piece-off) (copy-list drops-enemy) :test #'equal)
+				       :drops-ally drops-ally)
+				 alpha
+				 beta)
+				:score))
+		       (progn
+			 (setq variation (alphabeta
+					  (- n 1)
+					  (list :board (drop-piece board (first piece-off) drop)
+						:drops-enemy (remove (first piece-off) (copy-list drops-enemy) :test #'equal)
+						:drops-ally drops-ally)
+					  alpha
+					  beta))
+			 (setq max-eval (getf variation :score))))
+		   (setq alpha (max alpha max-eval))
+		   (if (>= alpha beta)
+		       (return-from alphabeta variation))))
+	     (return-from alphabeta variation))))))
 					
 		  
