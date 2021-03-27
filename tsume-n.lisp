@@ -349,4 +349,83 @@
     (when (> n 1)
       (newmain (- n 1) board))))
 					
+
+;;;----------------------- Alpha beta V2 ----------------------------------------------
+
+(defun get-childs (full-board ally)
+  (let ((drops-ally (getf full-board :drops-ally))
+	(drops-enemy (getf full-board :drops-enemy))
+	(board (getf full-board :board)))
+    
+    (if ally
+	(let ((all (get-all-ally board drops-ally))
+	      (result))
+	     
+	  (dolist (piece-on (getf all :moves))
+	    (dolist (movement (second piece-on))	    
+		     
+					;Move on an occupied square  
+	      (if (string-equal (subseq (aref board (first movement) (second movement)) 0 1) "-")
+		  (let ((new-drops (copy-list drops-ally)))
+		    (push
+		     (list :board (move-piece board (first piece-on) movement (getf piece-on :initial))    
+			   :drops-enemy drops-enemy
+			   :drops-ally (push (subseq (aref board (first movement) (second movement)) 1) new-drops))
+		     result))
 		  
+					;Move on an empty square
+		  (push 
+		   (list :board (move-piece board (first piece-on) movement (getf piece-on :initial))    
+			 :drops-enemy drops-enemy
+			 :drops-ally drops-ally)
+		   result))))
+	     
+	  (dolist (piece-off (getf all :drops))
+	    (dolist (drop (second piece-off))
+	      
+
+					;Drop
+	      (push 
+	       (list :board (drop-piece board (first piece-off) drop)
+		     :drops-enemy drops-enemy
+		     :drops-ally (remove (first piece-off) (copy-list drops-ally) :test #'equal))
+	       result)))
+	  (return-from get-childs result))
+
+	(let ((all (get-all-enemy board drops-enemy))
+	      (result))
+	       
+	       (dolist (piece-on (getf all :moves))
+		 (dolist (movement (second piece-on))
+
+					;Move on an occupied square
+		   (if (string-not-equal (aref board (first movement) (second movement)) "_")
+		       (let ((new-drops (copy-list drops-enemy)))
+			 (push 
+			  (list :board (move-piece board (first piece-on) movement (getf piece-on :initial))		    
+				:drops-enemy (push (concatenate 'string "-" (subseq (aref board (first movement) (second movement)) 1)) new-drops)
+				:drops-ally drops-ally)
+			  result))
+		     
+					;Move on an empty square
+		       (push 
+			(list :board (move-piece board (first piece-on) movement (getf piece-on :initial))		    
+			      :drops-enemy drops-enemy
+			      :drops-ally drops-ally)
+			result))))
+	     
+	       (dolist (piece-off (getf all :drops))
+		 (dolist (drop (second piece-off))
+		     
+					;Drop
+		   (push  
+		    (list :board (drop-piece board (first piece-off) drop)
+			  :drops-enemy (remove (first piece-off) (copy-list drops-enemy) :test #'equal)
+			  :drops-ally drops-ally)
+		    result)))
+	  (return-from get-childs result)))))
+
+
+
+	
+		
