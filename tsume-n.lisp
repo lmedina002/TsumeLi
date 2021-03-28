@@ -36,6 +36,12 @@
       (setq result (+ result (value-enemy-piece piece))))
     (return-from evaluation-enemy result)))
 
+(defun evaluation-enemy-full (full-board)
+  (let ((drops-ally (getf full-board :drops-ally))
+	(drops-enemy (getf full-board :drops-enemy))
+	(board (getf full-board :board)))
+    (evaluation-enemy board drops-enemy drops-ally)))
+
 (defun value-ally-piece (piece)
   (let ((result 0))
     (cond ((string-equal piece "P") (setq result (+ result 1)))
@@ -360,13 +366,16 @@
     (if ally
 	(let ((all (get-all-ally board drops-ally))
 	      (result))
+	  ;(print all)
 	     
 	  (dolist (piece-on (getf all :moves))
-	    (dolist (movement (second piece-on))	    
+	    (dolist (movement (second piece-on))
+	      ;(print movement)
+	      ;(print (subseq (aref board (first movement) (second movement)) 0 1))
 		     
 					;Move on an occupied square  
 	      (if (string-equal (subseq (aref board (first movement) (second movement)) 0 1) "-")
-		  (let ((new-drops (copy-list drops-ally)))
+		  (let ((new-drops (copy-list drops-ally)))		    
 		    (push
 		     (list :board (move-piece board (first piece-on) movement (getf piece-on :initial))    
 			   :drops-enemy drops-enemy
@@ -424,6 +433,48 @@
 			  :drops-ally drops-ally)
 		    result)))
 	  (return-from get-childs result)))))
+
+(defun alphabeta-V2 (full-board n alpha beta)
+  (when (or (= n 0) (checkmate-full full-board))
+    (return-from alphabeta-V2 (list :score (evaluation-enemy-full full-board) :full-board full-board)))
+  (if (oddp n)
+      ;;Ally turn, minimizing player
+      (let ((value 300)
+	    (tmp-child))
+	(dolist (child (get-childs full-board t))
+	  (let ((child-value (getf (alphabeta-V2 child (- n 1) alpha beta) :score)))
+	    (when (< child-value value)
+	      (progn
+		(setf value child-value)
+		(setf tmp-child child)))
+	    (setf beta (min beta value))
+	    (when (<= beta alpha)
+	      ;; Beta cut
+	      (return-from alphabeta-V2 (list :score value :full-board tmp-child)))))
+	(return-from alphabeta-V2 (list :score value :full-board tmp-child)))
+      
+      ;;Enemy turn, maximizing player
+      (let ((value -300)
+	    (tmp-child))
+	(dolist (child (get-childs full-board nil))
+	  (let ((child-value (getf (alphabeta-V2 child (- n 1) alpha beta) :score)))
+	    (when (> child-value value)
+	      (progn
+		(setf value child-value)
+		(setf tmp-child child)))
+	    (setf alpha (max alpha value))
+	    (when (<= beta alpha)
+	      ;; Alpha cut
+	      (return-from alphabeta-V2 (list :score value :full-board tmp-child)))
+	    (setf tmp-child child))
+	(return-from alphabeta-V2 (list :score value :full-board tmp-child))))))
+
+(defun start (full-board n)
+  (let ((result (alphabeta-V2 full-board n -300 300)))
+    (format-game (getf result :full-board))
+    (print (getf result :score))
+    (when (> n 1)
+      (start (getf result :full-board) (- n 1)))))
 
 
 
