@@ -24,16 +24,16 @@
   "Attribute a value to a board configuration"
   (let ((result 0))
     (when (checkmate board drops-ally drops-enemy)
-      (return-from evaluation-enemy -100))
+      (setf result (- result 100)))
     (when (mate board drops-ally)
-      (return-from evaluation-enemy 0))
+      (setf result (- result 20)))
     (dotimes (row 9 result)
       (dotimes (column 9 result)
 	(let ((square (aref board row column)))
 	  (when (string-equal (subseq square 0 1) "-")
-	    (setq result (+ result (value-enemy-piece square)))))))
+	    (setf result (+ result (value-enemy-piece square)))))))
     (dolist (piece drops-enemy)
-      (setq result (+ result (value-enemy-piece piece))))
+      (setf result (+ result (value-enemy-piece piece))))
     (return-from evaluation-enemy result)))
 
 (defun evaluation-enemy-full (full-board)
@@ -406,27 +406,28 @@
 	       
 	       (dolist (piece-on (getf all :moves))
 		 (dolist (movement (second piece-on))
+		   (when (not (mate (move-piece board (first piece-on) movement (getf piece-on :initial)) drops-ally))
 
-					;Move on an occupied square
-		   (if (string-not-equal (aref board (first movement) (second movement)) "_")
-		       (let ((new-drops (copy-list drops-enemy)))
+		     ;;Move on an occupied square
+		     (if (string-not-equal (aref board (first movement) (second movement)) "_")
+			 (let ((new-drops (copy-list drops-enemy)))
+			   (push 
+			    (list :board (move-piece board (first piece-on) movement (getf piece-on :initial))		    
+				  :drops-enemy (push (concatenate 'string "-" (subseq (aref board (first movement) (second movement)) 1)) new-drops)
+				  :drops-ally drops-ally)
+			    result))
+		     
+			 ;;Move on an empty square
 			 (push 
 			  (list :board (move-piece board (first piece-on) movement (getf piece-on :initial))		    
-				:drops-enemy (push (concatenate 'string "-" (subseq (aref board (first movement) (second movement)) 1)) new-drops)
+				:drops-enemy drops-enemy
 				:drops-ally drops-ally)
-			  result))
-		     
-					;Move on an empty square
-		       (push 
-			(list :board (move-piece board (first piece-on) movement (getf piece-on :initial))		    
-			      :drops-enemy drops-enemy
-			      :drops-ally drops-ally)
-			result))))
+			  result)))))
 	     
 	       (dolist (piece-off (getf all :drops))
 		 (dolist (drop (second piece-off))
 		     
-					;Drop
+		   ;;Drop
 		   (push  
 		    (list :board (drop-piece board (first piece-off) drop)
 			  :drops-enemy (remove (first piece-off) (copy-list drops-enemy) :test #'equal)
@@ -443,12 +444,14 @@
 	    (tmp-child))
 	(dolist (child (get-childs full-board t))
 	  (let ((child-value (getf (alphabeta-V2 child (- n 1) alpha beta) :score)))
+	    ;(print child)
+	    ;(print child-value)
 	    (when (< child-value value)
 	      (progn
 		(setf value child-value)
 		(setf tmp-child child)))
 	    (setf beta (min beta value))
-	    (when (<= beta alpha)
+	    (when (< beta alpha)
 	      ;; Beta cut
 	      (return-from alphabeta-V2 (list :score value :full-board tmp-child)))))
 	(return-from alphabeta-V2 (list :score value :full-board tmp-child)))
@@ -463,10 +466,9 @@
 		(setf value child-value)
 		(setf tmp-child child)))
 	    (setf alpha (max alpha value))
-	    (when (<= beta alpha)
+	    (when (< beta alpha)
 	      ;; Alpha cut
-	      (return-from alphabeta-V2 (list :score value :full-board tmp-child)))
-	    (setf tmp-child child))
+	      (return-from alphabeta-V2 (list :score value :full-board tmp-child))))
 	(return-from alphabeta-V2 (list :score value :full-board tmp-child))))))
 
 (defun start (full-board n)
@@ -475,6 +477,41 @@
     (print (getf result :score))
     (when (> n 1)
       (start (getf result :full-board) (- n 1)))))
+
+(defun minimax-V2 (full-board n)
+  (when (or (= n 0) (checkmate-full full-board))
+    (return-from minimax-V2 (list :score (evaluation-enemy-full full-board) :full-board full-board)))
+  (if (oddp n)
+      ;;Ally turn, minimizing player
+      (let ((value 300)
+	    (tmp-child))
+	(dolist (child (get-childs full-board t))
+	  (let ((child-value (getf (minimax-V2 child (- n 1)) :score)))
+	    ;(print child)
+	    ;(print child-value)
+	    (when (< child-value value)
+	      (progn
+		(setf value child-value)
+		(setf tmp-child child)))))
+	(return-from minimax-V2 (list :score value :full-board tmp-child)))
+      
+      ;;Enemy turn, maximizing player
+      (let ((value -300)
+	    (tmp-child))
+	(dolist (child (get-childs full-board nil))
+	  (let ((child-value (getf (minimax-V2 child (- n 1)) :score)))
+	    (when (> child-value value)
+	      (progn
+		(setf value child-value)
+		(setf tmp-child child)))))
+	(return-from minimax-V2 (list :score value :full-board tmp-child)))))
+
+(defun start-2 (full-board n)
+  (let ((result (minimax-V2 full-board n)))
+    (format-game (getf result :full-board))
+    (print (getf result :score))
+    (when (> n 1)
+      (start-2 (getf result :full-board) (- n 1)))))
 
 
 
