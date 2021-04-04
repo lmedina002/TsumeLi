@@ -1,6 +1,9 @@
 ;;;; Program to solve tsume in n-turn
 
-;;Evaluation of a board configuration
+;;;------------------ Auxiliary functions for board evaluation -----------------------------
+
+;; Raw
+
 (defun value-enemy-piece (piece)
   (let ((result 0))
     (cond ((string-equal piece "-P") (setq result (+ result 1)))
@@ -36,12 +39,6 @@
       (setf result (+ result (value-enemy-piece piece))))
     (return-from evaluation-enemy result)))
 
-(defun evaluation-enemy-full (full-board)
-  (let ((drops-ally (getf full-board :drops-ally))
-	(drops-enemy (getf full-board :drops-enemy))
-	(board (getf full-board :board)))
-    (evaluation-enemy board drops-enemy drops-ally)))
-
 (defun value-ally-piece (piece)
   (let ((result 0))
     (cond ((string-equal piece "P") (setq result (+ result 1)))
@@ -76,62 +73,111 @@
       (setq result (+ result (value-ally-piece piece))))
     (return-from evaluation-ally result)))
 
-;; Main
-(defun main (n full-board)
+
+;; Ponderation with distance
+(defun distance-to-jewel (board row column)
+  (let* ((j-position (find-piece "-J" board))	 
+	 (result))
+    
+    (if (not (equal j-position nil))
+	(let* ((coefficient 1)
+	       (euclidian (sqrt (+ (expt (- row (first j-position)) 2) (expt (- column (second j-position)) 2))))
+	       (euclidian-max (sqrt (+ (expt (- 0 8) 2) (expt (- 0 8) 2)))))
+	  (setf result (* (/ (- euclidian-max euclidian) euclidian-max) coefficient)))
+	
+	(setf result 0))))	 
+   
+(defun ponderate-evaluation-enemy (board drops-enemy drops-ally)
+  "Attribute a value to a board configuration"
+  (let ((result 0))
+    (when (checkmate board drops-ally drops-enemy)
+      (setf result (- result 100)))
+    
+    (when (mate board drops-ally)
+      (setf result (- result 20)))
+    
+    (dotimes (row 9 result)
+      (dotimes (column 9 result)
+	(let ((square (aref board row column)))
+	  (when (string-equal (subseq square 0 1) "-")
+	    (if (or (string-equal square "-B")
+		    (string-equal square "-R")
+		    (string-equal square "-+B")
+		    (string-equal square "-+R")
+		    (string-equal square "-J"))
+		;; No ponderation for these 4 pieces    
+		(setf result (+ result (value-enemy-piece square)))
+		
+		(setf result (* (+ result (value-enemy-piece square)) (distance-to-jewel board row column))))))))
+	  
+    (dolist (piece drops-enemy)
+      (setf result (+ result (value-enemy-piece piece))))
+	  
+    (return-from ponderate-evaluation-enemy result)))
+
+(defun ponderate-evaluation-enemy-full (full-board)
   (let ((drops-ally (getf full-board :drops-ally))
 	(drops-enemy (getf full-board :drops-enemy))
 	(board (getf full-board :board)))
-    (dotimes (k n)
-      (format-board (list :board board :drops-ally drops-ally :drops-enemy drops-enemy))
-      (cond ((evenp k) ;Ally turn
-	     (let ((all (get-all-ally board drops-ally))
-		   (min-eval)
-		   (play))
-	       (dolist (piece-on (getf all :moves))
-		 (dolist (movement (second piece-on))
-		   (when (< (evaluation-enemy (move-piece board (first piece-on) movement (getf piece-on :initial)) drops-enemy drops-ally) min-eval) ;Pb ajout pieces prises
-		     (progn
-		       (setq min-eval (evaluation-enemy (move-piece board (first piece-on) movement (getf piece-on :initial)) drops-enemy drops-ally))
-		       (setq play (list :piece (first piece-on) :movement movement :initial (getf piece-on :initial) :type "move"))))))
-	       (dolist (piece-off (getf all :drops))
-		 (dolist (drop (second piece-off))
-		   (when (< (evaluation-enemy (drop-piece board (first piece-off) drop) drops-enemy (remove (first piece-off) drops-ally :test #'equal)) min-eval)
-		     (progn
-		       (setq min-eval (evaluation-enemy (drop-piece board (first piece-off) drop) drops-enemy (remove (first piece-off) drops-ally :test #'equal)))
-		       (setq play (list :piece (first piece-off) :movement drop :type "drop"))))))
-	       (if (string-equal (getf play :type) "move") ;on joue le min
-		   (progn
-		     (if (string-equal (subseq (aref board (first (getf play :movement)) (second (getf play :movement))) 0 1) "-")
-			 (push drops-ally (subseq (aref board (first (getf play :movement)) (second (getf play :movement))) 1)))
-		     (setq board (move-piece board (getf play :piece) (getf play :movement) (getf play :initial)))) ;move-piece		     		     
-		   (progn
-		     (setq board (drop-piece board (getf play :piece) (getf play :location)))
-		     (setq drops-ally (remove (getf play :piece) drops-ally :test #'equal)))))) ;drop-piece
-	    ((oddp k) ;Enemy turn
-	     (let ((all (get-all-enemy board drops-enemy))
-		   (max-eval)
-		   (play))
-	       (dolist (piece-on (getf all :moves))
-		 (dolist (movement (second piece-on))
-		   (when (> (evaluation-enemy (move-piece board (first piece-on) movement (getf piece-on :initial)) drops-enemy drops-ally) max-eval) ;Pb ajout pieces prises
-		     (progn
-		       (setq max-eval (evaluation-enemy (move-piece board (first piece-on) movement (getf piece-on :initial)) drops-enemy drops-ally))
-		       (setq play (list :piece (first piece-on) :movement movement :initial (getf piece-on :initial) :type "move"))))))
-	       (dolist (piece-off (getf all :drops))
-		 (dolist (drop (second piece-off))
-		   (when (> (evaluation-enemy (drop-piece board (first piece-off) drop) (remove (first piece-off) drops-enemy :test #'equal) drops-ally) max-eval)
-		     (progn
-		       (setq max-eval (evaluation-enemy (drop-piece board (first piece-off) drop) (remove (first piece-off) drops-enemy :test #'equal) drops-ally))
-		       (setq play (list :piece (first piece-off) :movement drop :type "drop"))))))
-	       (if (string-equal (getf play :type) "move") ;on joue le max
-		   (progn
-		     (if (string-not-equal (aref board (first (getf play :movement)) (second (getf play :movement))) "_")
-			 (push (concatenate 'string "-" (aref board (first (getf play :movement)) (second (getf play :movement)))) drops-enemy))
-		     (setq board (move-piece board (getf play :piece) (getf play :movement) (getf play :initial)))) ;move-piece		     		     
-		   (progn
-		     (setq board (drop-piece board (getf play :piece) (getf play :location)))
-		     (setq drops-enemy (remove (getf play :piece) drops-enemy :test #'equal)))))))))) ;drop-piece
+    (ponderate-evaluation-enemy board drops-enemy drops-ally)))
 
+(defun ponderate-evaluation-ally (board drops-ally)
+  "Attribute a value to a board configuration"
+  (let ((result 0))
+    (when (mate board drops-ally)
+      (setq result (+ result 50)))
+    (dotimes (row 9 result)
+      (dotimes (column 9 result)
+	(let ((square (aref board row column)))
+	  (when (and (string-not-equal (subseq square 0 1) "-")
+		     (string-not-equal square "_"))
+	    (if (or (string-equal square "B")
+		    (string-equal square "R")
+		    (string-equal square "+B")
+		    (string-equal square "+R"))
+		;; No ponderation		
+		(setf result (+ result (value-ally-piece square)))
+
+		(setf result (* (+ result (value-ally-piece square)) (distance-to-jewel board row column))))))))
+    
+    (dolist (piece drops-ally)
+      (setq result (+ result (value-ally-piece piece))))
+    (return-from ponderate-evaluation-ally result)))
+
+  
+
+;;;--------------------- Evaluation functions -------------------------------
+
+(defun evaluation-enemy-full (full-board)
+  "Evaluation function, consider only enemy piece quality and quantity"
+  (let ((drops-ally (getf full-board :drops-ally))
+	(drops-enemy (getf full-board :drops-enemy))
+	(board (getf full-board :board)))
+    (evaluation-enemy board drops-enemy drops-ally)))
+
+(defun raw-material-balance (full-board)
+  "Evaluation function, consider only piece quality and quantity from each side" 
+  (let ((drops-ally (getf full-board :drops-ally))
+	(drops-enemy (getf full-board :drops-enemy))
+	(board (getf full-board :board))
+	(result 0))
+    ;;; Raw material balance
+    (setf result (+ result (evaluation-enemy board drops-enemy drops-ally)))
+    (setf result (- result (evaluation-ally board drops-ally)))))
+
+
+(defun ponderate-material-balance (full-board)
+  "Evaluation function, pieces values are modified according to their distance to jewel"
+  (let ((drops-ally (getf full-board :drops-ally))
+	(drops-enemy (getf full-board :drops-enemy))
+	(board (getf full-board :board))
+	(result 0))
+    ;;; Ponderate material balance
+    (setf result (+ result (ponderate-evaluation-enemy board drops-enemy drops-ally)))
+    (setf result (- result (ponderate-evaluation-ally board drops-ally)))))
+    
+;;;--------------------- Minimax -----------------------------------
+    
 (defun minimax (n full-board)
   (let ((drops-ally (getf full-board :drops-ally))
 	(drops-enemy (getf full-board :drops-enemy))
@@ -435,15 +481,15 @@
 		    result)))
 	  (return-from get-childs result)))))
 
-(defun alphabeta-V2 (full-board n alpha beta)
+(defun alphabeta-V2 (full-board n alpha beta evaluation-function)
   (when (or (= n 0) (checkmate-full full-board))
-    (return-from alphabeta-V2 (list :score (evaluation-enemy-full full-board) :full-board full-board)))
+    (return-from alphabeta-V2 (list :score (funcall evaluation-function full-board) :full-board full-board)))
   (if (oddp n)
       ;;Ally turn, minimizing player
       (let ((value 300)
 	    (tmp-child))
 	(dolist (child (get-childs full-board t))
-	  (let ((child-value (getf (alphabeta-V2 child (- n 1) alpha beta) :score)))
+	  (let ((child-value (getf (alphabeta-V2 child (- n 1) alpha beta evaluation-function) :score)))
 	    ;(print child)
 	    ;(print child-value)
 	    (when (< child-value value)
@@ -460,7 +506,7 @@
       (let ((value -300)
 	    (tmp-child))
 	(dolist (child (get-childs full-board nil))
-	  (let ((child-value (getf (alphabeta-V2 child (- n 1) alpha beta) :score)))
+	  (let ((child-value (getf (alphabeta-V2 child (- n 1) alpha beta evaluation-function) :score)))
 	    (when (> child-value value)
 	      (progn
 		(setf value child-value)
@@ -471,12 +517,12 @@
 	      (return-from alphabeta-V2 (list :score value :full-board tmp-child))))
 	(return-from alphabeta-V2 (list :score value :full-board tmp-child))))))
 
-(defun start (full-board n)
-  (let ((result (alphabeta-V2 full-board n -300 300)))
+(defun start (full-board n evaluation-function)
+  (let ((result (alphabeta-V2 full-board n -300 300 evaluation-function)))
     (format-game (getf result :full-board))
     (print (getf result :score))
     (when (> n 1)
-      (start (getf result :full-board) (- n 1)))))
+      (start (getf result :full-board) (- n 1) evaluation-function))))
 
 (defun minimax-V2 (full-board n)
   (when (or (= n 0) (checkmate-full full-board))
