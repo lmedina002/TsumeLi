@@ -1,5 +1,7 @@
+(defparameter *excel-file-name* "tsume-configuration.xlsx")
+
 (defun read-config ()
-  (let* ((raw (xlsx:as-plist (xlsx:read-sheet "tsume-configuration.xlsx")))
+  (let* ((raw (xlsx:as-plist (xlsx:read-sheet *excel-file-name*)))
 	 (board (read-board raw))
 	 (enemy-hand (read-hand raw "3" "A"))
 	 (ally-hand (read-hand raw "15" "A")))
@@ -54,3 +56,7 @@
 		     ((string-equal (subseq cell-s 0 1) "J")
 		      (setf (aref board col 8) value)))))))
     (return-from read-board board)))
+
+(defun read-turns ()
+  (let* ((raw (xlsx:as-plist (xlsx:read-sheet *excel-file-name*))))
+    (getf raw :B17)))
