@@ -4,8 +4,12 @@
   (let* ((raw (xlsx:as-plist (xlsx:read-sheet *excel-file-name*)))
 	 (board (read-board raw))
 	 (enemy-hand (read-hand raw "3" "A"))
-	 (ally-hand (read-hand raw "15" "A")))
-    (return-from read-config (list :board board :drops-ally ally-hand :drops-enemy enemy-hand))))
+	 (ally-hand (read-hand raw "15" "A"))
+	 (evaluation-function (read-evaluation-function raw))
+	 (algorithm (read-algorithm raw)))
+    (return-from read-config (list :full-board (list :board board :drops-ally ally-hand :drops-enemy enemy-hand)
+				   :evaluation-function evaluation-function
+				   :algorithm algorithm))))
     
 
 (defun read-hand (raw-plist row-string first-col)
@@ -60,3 +64,23 @@
 (defun read-turns ()
   (let* ((raw (xlsx:as-plist (xlsx:read-sheet *excel-file-name*))))
     (getf raw :B17)))
+
+(defun read-evaluation-function (raw-plist)
+  (let ((choice (getf raw-plist :A26)))
+    (cond ((= choice 1)
+	   (return-from read-evaluation-function #'evaluation-enemy-full))
+	  ((= choice 2)
+	   (return-from read-evaluation-function #'raw-material-balance))
+	  ((= choice 3)
+	   (return-from read-evaluation-function #'ponderate-material-balance))
+	  (t (return-from read-evaluation-function #'evaluation-enemy-full)))))
+
+(defun read-algorithm (raw-plist)
+  (let ((choice (getf raw-plist :B26)))
+    (cond ((= choice 1)
+	   (return-from read-algorithm #'minimax))
+	  ((= choice 2)
+	   (return-from read-algorithm #'alphabeta))
+	  (t (return-from read-algorithm #'minimax)))))
+	   
+	   
