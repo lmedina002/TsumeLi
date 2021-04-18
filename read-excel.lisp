@@ -6,10 +6,12 @@
 	 (enemy-hand (read-hand raw "3" "A"))
 	 (ally-hand (read-hand raw "15" "A"))
 	 (evaluation-function (read-evaluation-function raw))
-	 (algorithm (read-algorithm raw)))
+	 (algorithm (read-algorithm raw))
+	 (turns (read-turns raw)))
     (return-from read-config (list :full-board (list :board board :drops-ally ally-hand :drops-enemy enemy-hand)
 				   :evaluation-function evaluation-function
-				   :algorithm algorithm))))
+				   :algorithm algorithm
+				   :turns turns))))
     
 
 (defun read-hand (raw-plist row-string first-col)
@@ -61,9 +63,8 @@
 		      (setf (aref board col 8) value)))))))
     (return-from read-board board)))
 
-(defun read-turns ()
-  (let* ((raw (xlsx:as-plist (xlsx:read-sheet *excel-file-name*))))
-    (getf raw :B17)))
+(defun read-turns (raw-plist)
+  (getf raw-plist :B17))
 
 (defun read-evaluation-function (raw-plist)
   (let ((choice (getf raw-plist :A26)))

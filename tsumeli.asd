@@ -13,6 +13,11 @@
                (:file "rules-test"
 		:depends-on ("rules"))
 	       (:file "tsume-n"
-                :depends-on ("rules" "interactions" "read-excel"))
+                :depends-on ("rules" "interactions"))
 	       (:file "storage")
-	       (:file "read-excel")))
+	       (:file "read-excel")
+	       (:file "main"
+		:depends-on ("read-excel")))
+  :build-operation "program-op"
+  :build-pathname "tsumeli-binary"
+  :entry-point "tsumeli:main")
