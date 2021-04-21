@@ -270,7 +270,7 @@
       (let ((value 300)
 	    (tmp-child))
 	(dolist (child (get-childs full-board t))
-	  (let ((child-value (getf (alphabeta child (- n 1) alpha beta evaluation-function) :score)))
+	  (let ((child-value (getf (alphabeta child (- n 1) evaluation-function alpha beta) :score)))
 	    ;(print child)
 	    ;(print child-value)
 	    (when (< child-value value)
@@ -287,7 +287,7 @@
       (let ((value -300)
 	    (tmp-child))
 	(dolist (child (get-childs full-board nil))
-	  (let ((child-value (getf (alphabeta child (- n 1) alpha beta evaluation-function) :score)))
+	  (let ((child-value (getf (alphabeta child (- n 1) evaluation-function alpha beta) :score)))
 	    (when (> child-value value)
 	      (progn
 		(setf value child-value)
@@ -337,7 +337,7 @@
   "Start algorithm with evaluation function, the board and the depth given"
   (let ((result (funcall algorithm full-board n evaluation-function)))
     (format-game (getf result :full-board))
-    (print (getf result :score))
+    (print (funcall evaluation-function (getf result :full-board)))
     (when (> n 1)
       (start (getf result :full-board) (- n 1) evaluation-function algorithm))))
 
