@@ -1,4 +1,5 @@
 ;;;; File containing the functions for handling interactions with users
+(in-package :tsumeli)
 
 (defun format-game (board)
   "Print an user-friendly version of the game situation: board + drops"

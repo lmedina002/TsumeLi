@@ -1,4 +1,5 @@
 ;;;; Programm to solve tsume in 1 turn
+(in-package :tsumeli)
 
 (let* ((board
 	 (list

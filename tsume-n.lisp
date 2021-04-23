@@ -1,5 +1,6 @@
 ;;;; Program to solve tsume in n-turn
 
+(in-package :tsumeli)
 ;;;------------------ Auxiliary functions for board evaluation -----------------------------
 
 ;; Raw

@@ -6,7 +6,8 @@
   :description "Solving shogi tsume"
   :long-description "Lisp implementation of shogi tsume solving"
   :depends-on (:xlsx)
-  :components ((:file "rules")
+  :components ((:file "package")
+	       (:file "rules")
 	       (:file "interactions")
                (:file "tsume-1"
                 :depends-on ("rules" "interactions" "read-excel"))
@@ -20,4 +21,4 @@
 		:depends-on ("read-excel")))
   :build-operation "program-op"
   :build-pathname "tsumeli-binary"
-  :entry-point "tsumeli:main")
+  :entry-point "tsumeli::main")

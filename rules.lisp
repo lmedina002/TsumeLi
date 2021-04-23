@@ -1,5 +1,6 @@
 ;;;; File containing all the functions for implementing the rules of shogi
 
+(in-package :tsumeli)
 ;;;----------------------------------------------------------------------------------------------
 ;;; Board related functions
 

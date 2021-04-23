@@ -1,4 +1,5 @@
 ;;;; Run tests for the functions in the file rules.lisp
+(in-package :tsumeli)
 
 (format t "~%------------- Debut ---------------~%~%Test des get-move-...-ally:~%")
 

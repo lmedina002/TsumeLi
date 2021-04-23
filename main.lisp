@@ -1,7 +1,10 @@
+(in-package :tsumeli)
+
 (defun main()
   (let* ((config (read-config))
        (full-board (getf config :full-board))
        (n (getf config :turns))
        (evaluation-function (getf config :evaluation-function))
 	 (algorithm (getf config :algorithm)))
-    (start full-board n evaluation-function algorithm)))
+    (start full-board n evaluation-function algorithm))
+  (read))

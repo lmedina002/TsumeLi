@@ -1,3 +1,5 @@
+(in-package :tsumeli)
+
 (defparameter *excel-file-name* "tsume-configuration.xlsx")
 
 (defun read-config ()
