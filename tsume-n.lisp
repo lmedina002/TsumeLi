@@ -252,11 +252,12 @@
 		 (dolist (drop (second piece-off))
 		     
 		   ;;Drop
-		   (push  
-		    (list :board (drop-piece board (first piece-off) drop)
-			  :drops-enemy (remove (first piece-off) (copy-list drops-enemy) :test #'equal)
-			  :drops-ally drops-ally)
-		    result)))
+		   (when (not (mate (drop-piece board (first piece-off) drop) drops-ally))
+		     (push  
+		      (list :board (drop-piece board (first piece-off) drop)
+			    :drops-enemy (remove (first piece-off) (copy-list drops-enemy) :test #'equal)
+			    :drops-ally drops-ally)
+		      result))))
 	  (return-from get-childs result)))))
 
 
