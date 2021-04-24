@@ -6,5 +6,6 @@
        (n (getf config :turns))
        (evaluation-function (getf config :evaluation-function))
 	 (algorithm (getf config :algorithm)))
+    (format-game full-board)
     (start full-board n evaluation-function algorithm))
   (read))
