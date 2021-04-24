@@ -207,16 +207,36 @@
 					:drops-enemy drops-enemy
 					:drops-ally (push (subseq (aref board (first movement) (second movement)) 1) new-drops))
 		      :message (format nil "~%Piece ~A in ~A move to ~A~%" (first piece-on) (getf piece-on :initial) movement))
-		     result))
+		     result)
+		    (if (and (<= (first movement) 2) ;promotion available
+			     (not (equal (subseq (first piece-on) 0 1) "+")))
+			(push
+			 (list
+			  :full-board (list :board (move-piece board (promote (first piece-on)) movement (getf piece-on :initial))    
+					    :drops-enemy drops-enemy
+					    :drops-ally (push (subseq (aref board (first movement) (second movement)) 1) new-drops))
+			  :message (format nil "~%Piece ~A in ~A move to ~A and promote~%" (first piece-on) (getf piece-on :initial) movement))
+			 result)))
+	  
 		  
 					;Move on an empty square
-		  (push 
-		   (list
-		    :full-board (list :board (move-piece board (first piece-on) movement (getf piece-on :initial))    
-				      :drops-enemy drops-enemy
-				      :drops-ally drops-ally)
-		    :message (format nil "~%Piece ~A in ~A move to ~A~%" (first piece-on) (getf piece-on :initial) movement))
-		   result))))
+		  (progn
+		    (push 
+		     (list
+		      :full-board (list :board (move-piece board (first piece-on) movement (getf piece-on :initial))    
+					:drops-enemy drops-enemy
+					:drops-ally drops-ally)
+		      :message (format nil "~%Piece ~A in ~A move to ~A~%" (first piece-on) (getf piece-on :initial) movement))
+		     result)
+		    (if (and (<= (first movement) 2) ;promotion available
+			     (not (equal (subseq (first piece-on) 0 1) "+")))
+			(push
+			 (list
+			  :full-board (list :board (move-piece board (promote (first piece-on)) movement (getf piece-on :initial))    
+					    :drops-enemy drops-enemy
+					    :drops-ally drops-ally)
+			  :message (format nil "~%Piece ~A in ~A move to ~A and promote~%" (first piece-on) (getf piece-on :initial) movement))
+			 result))))))
 	     
 	  (dolist (piece-off (getf all :drops))
 	    (dolist (drop (second piece-off))
@@ -248,16 +268,35 @@
 					       :drops-enemy (push (concatenate 'string "-" (subseq (aref board (first movement) (second movement)) 1)) new-drops)
 					       :drops-ally drops-ally)
 			     :message (format nil "~%Piece ~A in ~A move to ~A~%" (first piece-on) (getf piece-on :initial) movement))
-			    result))
+			    result)
+			   (if (and (>= (first movement) 6) ;promotion available
+				    (not (equal (subseq (first piece-on) 1 2) "+")))
+			       (push
+				(list
+				 :full-board (list :board (move-piece board (promote (first piece-on)) movement (getf piece-on :initial))    
+						   :drops-enemy (push (concatenate 'string "-" (subseq (aref board (first movement) (second movement)) 1)) new-drops)
+						   :drops-ally drops-ally)
+				 :message (format nil "~%Piece ~A in ~A move to ~A and promote~%" (first piece-on) (getf piece-on :initial) movement))
+				result)))
 		     
 			 ;;Move on an empty square
-			 (push 
-			  (list
-			   :full-board (list :board (move-piece board (first piece-on) movement (getf piece-on :initial))		    
-					     :drops-enemy drops-enemy
-					     :drops-ally drops-ally)
-			   :message (format nil "~%Piece ~A in ~A move to ~A~%" (first piece-on) (getf piece-on :initial) movement))
-			  result)))))
+			 (progn
+			   (push 
+			    (list
+			     :full-board (list :board (move-piece board (first piece-on) movement (getf piece-on :initial))		    
+					       :drops-enemy drops-enemy
+					       :drops-ally drops-ally)
+			     :message (format nil "~%Piece ~A in ~A move to ~A~%" (first piece-on) (getf piece-on :initial) movement))
+			    result)
+			   (if (and (>= (first movement) 6) ;promotion available
+				    (not (equal (subseq (first piece-on) 1 2) "+")))
+			       (push
+				(list
+				 :full-board (list :board (move-piece board (promote (first piece-on)) movement (getf piece-on :initial))    
+						   :drops-enemy drops-enemy
+						   :drops-ally drops-ally)
+				 :message (format nil "~%Piece ~A in ~A move to ~A and promote~%" (first piece-on) (getf piece-on :initial) movement))
+				result)))))))
 	     
 	       (dolist (piece-off (getf all :drops))
 		 (dolist (drop (second piece-off))
