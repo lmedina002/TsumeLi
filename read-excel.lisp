@@ -5,7 +5,7 @@
 (defun read-config ()
   (let* ((raw (xlsx:as-plist (xlsx:read-sheet *excel-file-name*)))
 	 (board (read-board raw))
-	 (enemy-hand (read-hand raw "3" "A"))
+	 (enemy-hand (deduce-hand board))
 	 (ally-hand (read-hand raw "15" "A"))
 	 (evaluation-function (read-evaluation-function raw))
 	 (algorithm (read-algorithm raw))
@@ -21,9 +21,18 @@
     (loop
       for (cell value) on raw-plist by #'cddr ;same as (cdr (cdr list)), allow to take two element each time
       do
-	 (when (and (string-equal (subseq (string cell) 1 2) row-string) (string-not-equal (subseq (string cell) 0 1) first-col))
+	 (when (and (string-equal (subseq (string cell) 1) row-string) (string-not-equal (subseq (string cell) 0 1) first-col))
 	   (push value hand)))
     (return-from read-hand hand)))
+
+(defun deduce-hand (board)
+  (let ((hand (list "-P" "-P" "-P" "-P" "-P" "-P" "-P" "-P" "-P" "-L" "-L" "-N" "-N" "-S" "-S" "-G" "-G" "-R" "-B"))) ;Full-hand
+    (dotimes (row 9 hand)
+      (dotimes (column 9 hand)
+	(let ((square (aref board row column)))
+	  (when (and (string-not-equal (subseq square 0 1) "-")
+		     (string-not-equal square "_"))
+	      (setf hand (remove (concatenate 'string "-" (subseq square (- (length square) 1))) hand :test #'equal :count 1))))))))
 
 (defun read-board (raw-plist)
   (let ((board (make-array '(9 9)

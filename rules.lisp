@@ -300,7 +300,7 @@ perform better."
 	 (cond ((is-ally (- row 2) (+ column 1) board)
 		())
 	       (t (list (list (- row 2) (+ column 1))))))
-	(t (promote "N"))))
+	(t nil)))
 
 (defun get-move-silver-ally (row column board)
   (let* ((all-row (list (- row 1) (- row 1) (- row 1) (+ row 1) (+ row 1)))
@@ -468,7 +468,7 @@ perform better."
 	 (cond ((is-ally (+ row 2) (+ column 1) board)
 		())
 	       (t (list (list (+ row 2) (+ column 1))))))
-	(t (promote "-N"))))
+	(t nil)))
 
 (defun get-move-silver-enemy (row column board)
   (let* ((all-row (list (+ row 1) (+ row 1) (+ row 1) (- row 1) (- row 1)))

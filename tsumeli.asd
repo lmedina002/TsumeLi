@@ -18,5 +18,5 @@
 	       (:file "main"
 		:depends-on ("read-excel" "tsume-n" "interactions")))
   :build-operation "program-op"
-  :build-pathname "tsumeli-binary"
+  :build-pathname "TsumeLi"
   :entry-point "tsumeli::main")

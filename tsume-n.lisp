@@ -63,7 +63,7 @@
   "Attribute a value to a board configuration"
   (let ((result 0))
     (when (mate board drops-ally)
-      (setq result (+ result 50)))
+      (setq result (+ result 20)))
     (dotimes (row 9 result)
       (dotimes (column 9 result)
 	(let ((square (aref board row column)))
@@ -126,7 +126,7 @@
   "Attribute a value to a board configuration"
   (let ((result 0))
     (when (mate board drops-ally)
-      (setq result (+ result 50)))
+      (setq result (+ result 20)))
     (dotimes (row 9 result)
       (dotimes (column 9 result)
 	(let ((square (aref board row column)))
@@ -205,7 +205,9 @@
 		     (list
 		      :full-board (list :board (move-piece board (first piece-on) movement (getf piece-on :initial))    
 					:drops-enemy drops-enemy
-					:drops-ally (push (subseq (aref board (first movement) (second movement)) 1) new-drops))
+					:drops-ally (push (subseq (aref board (first movement) (second movement))
+								  (- (length (aref board (first movement) (second movement))) 1))
+							  new-drops))
 		      :message (format nil "~%Piece ~A in ~A move to ~A~%" (first piece-on) (getf piece-on :initial) movement))
 		     result)
 		    (if (and (<= (first movement) 2) ;promotion available
@@ -214,7 +216,9 @@
 			 (list
 			  :full-board (list :board (move-piece board (promote (first piece-on)) movement (getf piece-on :initial))    
 					    :drops-enemy drops-enemy
-					    :drops-ally (push (subseq (aref board (first movement) (second movement)) 1) new-drops))
+					    :drops-ally (push (subseq (aref board (first movement) (second movement))
+								  (- (length (aref board (first movement) (second movement))) 1))
+							  new-drops))
 			  :message (format nil "~%Piece ~A in ~A move to ~A and promote~%" (first piece-on) (getf piece-on :initial) movement))
 			 result)))
 	  
@@ -247,7 +251,7 @@
 	       (list
 		:full-board (list :board (drop-piece board (first piece-off) drop)
 				  :drops-enemy drops-enemy
-				  :drops-ally (remove (first piece-off) (copy-list drops-ally) :test #'equal))
+				  :drops-ally (remove (first piece-off) (copy-list drops-ally) :test #'equal :count 1))
 		:message (format nil "~%Drop piece ~A to ~A~%" (first piece-off) drop))
 	       result)))
 	  (return-from get-childs result))
@@ -265,7 +269,9 @@
 			   (push
 			    (list
 			     :full-board (list :board (move-piece board (first piece-on) movement (getf piece-on :initial))		    
-					       :drops-enemy (push (concatenate 'string "-" (subseq (aref board (first movement) (second movement)) 1)) new-drops)
+					       :drops-enemy (push (concatenate 'string "-" (subseq (aref board (first movement) (second movement))
+												   (- (length (aref board (first movement) (second movement))) 1)))
+								  new-drops)
 					       :drops-ally drops-ally)
 			     :message (format nil "~%Piece ~A in ~A move to ~A~%" (first piece-on) (getf piece-on :initial) movement))
 			    result)
@@ -274,7 +280,9 @@
 			       (push
 				(list
 				 :full-board (list :board (move-piece board (promote (first piece-on)) movement (getf piece-on :initial))    
-						   :drops-enemy (push (concatenate 'string "-" (subseq (aref board (first movement) (second movement)) 1)) new-drops)
+						   :drops-enemy (push (concatenate 'string "-" (subseq (aref board (first movement) (second movement))
+												   (- (length (aref board (first movement) (second movement))) 1)))
+								  new-drops)
 						   :drops-ally drops-ally)
 				 :message (format nil "~%Piece ~A in ~A move to ~A and promote~%" (first piece-on) (getf piece-on :initial) movement))
 				result)))
@@ -306,7 +314,7 @@
 		     (push  
 		      (list
 		       :full-board (list :board (drop-piece board (first piece-off) drop)
-					 :drops-enemy (remove (first piece-off) (copy-list drops-enemy) :test #'equal)
+					 :drops-enemy (remove (first piece-off) (copy-list drops-enemy) :test #'equal :count 1)
 					 :drops-ally drops-ally)
 		       :message (format nil "~%Drop piece ~A to ~A~%" (first piece-off) drop))
 		      result))))
