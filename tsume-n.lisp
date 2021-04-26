@@ -216,9 +216,7 @@
 			 (list
 			  :full-board (list :board (move-piece board (promote (first piece-on)) movement (getf piece-on :initial))    
 					    :drops-enemy drops-enemy
-					    :drops-ally (push (subseq (aref board (first movement) (second movement))
-								  (- (length (aref board (first movement) (second movement))) 1))
-							  new-drops))
+					    :drops-ally new-drops)
 			  :message (format nil "~%Piece ~A in ~A move to ~A and promote~%" (first piece-on) (getf piece-on :initial) movement))
 			 result)))
 	  
@@ -280,9 +278,7 @@
 			       (push
 				(list
 				 :full-board (list :board (move-piece board (promote (first piece-on)) movement (getf piece-on :initial))    
-						   :drops-enemy (push (concatenate 'string "-" (subseq (aref board (first movement) (second movement))
-												   (- (length (aref board (first movement) (second movement))) 1)))
-								  new-drops)
+						   :drops-enemy new-drops
 						   :drops-ally drops-ally)
 				 :message (format nil "~%Piece ~A in ~A move to ~A and promote~%" (first piece-on) (getf piece-on :initial) movement))
 				result)))
@@ -323,15 +319,15 @@
 
 ;;;----------------------- Alpha beta pruning ----------------------------------------------
 
-(defun alphabeta (full-board n evaluation-function &optional (alpha -300) (beta 300) message)
+(defun alphabeta (full-board n evaluation-function player &optional (alpha -300) (beta 300) (message ""))
   (when (or (= n 0) (checkmate-full full-board))
     (return-from alphabeta (list :score (funcall evaluation-function full-board) :full-board full-board :message message)))
-  (if (oddp n)
+  (if (equal player t)
       ;;Ally turn, minimizing player
       (let ((value 300)
 	    (tmp-child))
 	(dolist (child (get-childs full-board t))
-	  (let ((child-value (getf (alphabeta (getf child :full-board) (- n 1) evaluation-function alpha beta (getf child :message)) :score)))
+	  (let ((child-value (getf (alphabeta (getf child :full-board) (- n 1) evaluation-function nil alpha beta (getf child :message)) :score)))
 	    ;(print child)
 	    ;(print child-value)
 	    (when (< child-value value)
@@ -348,7 +344,7 @@
       (let ((value -300)
 	    (tmp-child))
 	(dolist (child (get-childs full-board nil))
-	  (let ((child-value (getf (alphabeta (getf child :full-board) (- n 1) evaluation-function alpha beta (getf child :message)) :score)))
+	  (let ((child-value (getf (alphabeta (getf child :full-board) (- n 1) evaluation-function t alpha beta (getf child :message)) :score)))
 	    (when (> child-value value)
 	      (progn
 		(setf value child-value)
@@ -363,15 +359,15 @@
 
 ;;;--------------------- Minimax -----------------------------------
 
-(defun minimax (full-board n evaluation-function &optional message)
+(defun minimax (full-board n evaluation-function player &optional (message ""))
   (when (or (= n 0) (checkmate-full full-board))
     (return-from minimax (list :score (funcall evaluation-function full-board) :full-board full-board :message message)))
-  (if (oddp n)
+  (if (equal player t)
       ;;Ally turn, minimizing player
       (let ((value 300)
 	    (tmp-child))
 	(dolist (child (get-childs full-board t))
-	  (let ((child-value (getf (minimax (getf child :full-board) (- n 1) evaluation-function (getf child :message)) :score)))
+	  (let ((child-value (getf (minimax (getf child :full-board) (- n 1) evaluation-function nil (getf child :message)) :score)))
 	    ;(print child)
 	    ;(print child-value)
 	    (when (< child-value value)
@@ -384,7 +380,7 @@
       (let ((value -300)
 	    (tmp-child))
 	(dolist (child (get-childs full-board nil))
-	  (let ((child-value (getf (minimax (getf child :full-board) (- n 1) evaluation-function (getf child :message)) :score)))
+	  (let ((child-value (getf (minimax (getf child :full-board) (- n 1) evaluation-function t (getf child :message)) :score)))
 	    (when (> child-value value)
 	      (progn
 		(setf value child-value)
@@ -394,14 +390,14 @@
 
 ;;----------------------------------------------------------------------------
 
-(defun start (full-board n evaluation-function algorithm)
+(defun start (full-board n evaluation-function algorithm depth)
   "Start algorithm with evaluation function, the board and the depth given"
-  (let ((result (funcall algorithm full-board n evaluation-function)))
+  (let ((result (funcall algorithm full-board depth evaluation-function (oddp n))))
     (format-game (getf result :full-board))
     (format t (getf result :message))
     (format t "Score of the board: ~A~%" (funcall evaluation-function (getf result :full-board)))
-    (when (> n 1)
-      (start (getf result :full-board) (- n 1) evaluation-function algorithm))))
+    (when (and (> n 1) (not (checkmate-full full-board)))
+      (start (getf result :full-board) (- n 1) evaluation-function algorithm depth))))
 
 
 

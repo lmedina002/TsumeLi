@@ -9,11 +9,13 @@
 	 (ally-hand (read-hand raw "15" "A"))
 	 (evaluation-function (read-evaluation-function raw))
 	 (algorithm (read-algorithm raw))
-	 (turns (read-turns raw)))
+	 (turns (read-turns raw))
+	 (depth (read-depth raw)))
     (return-from read-config (list :full-board (list :board board :drops-ally ally-hand :drops-enemy enemy-hand)
 				   :evaluation-function evaluation-function
 				   :algorithm algorithm
-				   :turns turns))))
+				   :turns turns
+				   :depth depth))))
     
 
 (defun read-hand (raw-plist row-string first-col)
@@ -52,7 +54,7 @@
       do
 	 (progn
 	   (let* ((cell-s (string cell))
-		  (col (- (parse-integer cell-s :start 1 :end 2) 5)))
+		  (col (- (parse-integer cell-s :start 1) 5)))
 	     (when (and (>= col 0) (<= col 8)) 
 	       (cond ((string-equal (subseq cell-s 0 1) "B")
 		      (setf (aref board col 0) value))
@@ -77,6 +79,9 @@
 (defun read-turns (raw-plist)
   (getf raw-plist :B17))
 
+(defun read-depth (raw-plist)
+  (getf raw-plist :B24))
+
 (defun read-evaluation-function (raw-plist)
   (let ((choice (getf raw-plist :A26)))
     (cond ((= choice 1)
@@ -93,6 +98,6 @@
 	   (return-from read-algorithm #'minimax))
 	  ((= choice 2)
 	   (return-from read-algorithm #'alphabeta))
-	  (t (return-from read-algorithm #'minimax)))))
+	  (t (return-from read-algorithm #'alphabeta)))))
 	   
 	   
